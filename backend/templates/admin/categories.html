@@ -1,0 +1,16 @@
+﻿{% extends "admin/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Categories</h1>
+  <form class="card form-grid" method="post">
+    <label>Name<input name="name"></label>
+    <label>Description<textarea name="description" rows="3"></textarea></label>
+    <button class="btn" type="submit">Add Category</button>
+  </form>
+  <div class="card">
+    {% for category in categories %}
+      <div class="row"><span>{{ category.name }}</span><span>{{ category.slug }}</span></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

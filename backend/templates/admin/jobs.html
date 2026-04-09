@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Jobs</h1>
+  <div class="card">
+    {% for job in jobs %}
+      <form class="row" method="post">
+        <input type="hidden" name="job_id" value="{{ job.id }}">
+        <div>
+          <strong>{{ job.title }}</strong>
+          <div class="muted">{{ job.company.company_name if job.company else '' }} · {{ job.location }} · {{ job.status }}</div>
+        </div>
+        <select name="status">
+          <option value="draft" {% if job.status == 'draft' %}selected{% endif %}>draft</option>
+          <option value="published" {% if job.status == 'published' %}selected{% endif %}>published</option>
+          <option value="paused" {% if job.status == 'paused' %}selected{% endif %}>paused</option>
+          <option value="closed" {% if job.status == 'closed' %}selected{% endif %}>closed</option>
+        </select>
+        <button class="btn small" type="submit">Save</button>
+      </form>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

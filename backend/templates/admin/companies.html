@@ -1,0 +1,28 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Companies</h1>
+  <form class="card form-grid" method="post">
+    <label>Recruiter
+      <select name="recruiter_user_id">
+        {% for recruiter in recruiters %}
+          <option value="{{ recruiter.id }}">{{ recruiter.full_name }} ({{ recruiter.email }})</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Company name<input name="company_name"></label>
+    <label>Tax code<input name="tax_code"></label>
+    <label>Website<input name="website"></label>
+    <label>Address<input name="address"></label>
+    <label>Industry<input name="industry"></label>
+    <label>Description<textarea name="description" rows="4"></textarea></label>
+    <label>Logo URL<input name="logo_url"></label>
+    <button class="btn" type="submit">Add Company</button>
+  </form>
+  <div class="card">
+    {% for company in companies %}
+      <div class="row"><span>{{ company.company_name }}</span><span>{{ company.tax_code }}</span></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

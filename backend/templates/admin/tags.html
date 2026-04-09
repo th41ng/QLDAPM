@@ -1,0 +1,23 @@
+﻿{% extends "admin/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Tags</h1>
+  <form class="card form-grid" method="post">
+    <label>Name<input name="name"></label>
+    <label>Category
+      <select name="category_id">
+        {% for category in categories %}
+          <option value="{{ category.id }}">{{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Description<textarea name="description" rows="3"></textarea></label>
+    <button class="btn" type="submit">Add Tag</button>
+  </form>
+  <div class="card">
+    {% for tag in tags %}
+      <div class="row"><span>{{ tag.name }}</span><span>{{ tag.category.name }}</span></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

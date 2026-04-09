@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Applications</h1>
+  <div class="card">
+    {% for app in applications %}
+      <form class="row" method="post">
+        <input type="hidden" name="application_id" value="{{ app.id }}">
+        <div>
+          <strong>{{ app.candidate.full_name }}</strong>
+          <div class="muted">{{ app.job.title }} · {{ app.status }}</div>
+        </div>
+        <select name="status">
+          <option value="submitted" {% if app.status == 'submitted' %}selected{% endif %}>submitted</option>
+          <option value="reviewing" {% if app.status == 'reviewing' %}selected{% endif %}>reviewing</option>
+          <option value="interview" {% if app.status == 'interview' %}selected{% endif %}>interview</option>
+          <option value="accepted" {% if app.status == 'accepted' %}selected{% endif %}>accepted</option>
+          <option value="rejected" {% if app.status == 'rejected' %}selected{% endif %}>rejected</option>
+        </select>
+        <button class="btn small" type="submit">Save</button>
+      </form>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

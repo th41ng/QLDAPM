@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Users</h1>
+  <div class="card">
+    {% for user in users %}
+      <form class="row" method="post">
+        <input type="hidden" name="user_id" value="{{ user.id }}">
+        <div>
+          <strong>{{ user.full_name }}</strong>
+          <div class="muted">{{ user.email }} · {{ user.role }} · {{ user.status }}</div>
+        </div>
+        <button class="btn small" name="action" value="toggle" type="submit">
+          {% if user.status == 'active' %}Lock{% else %}Unlock{% endif %}
+        </button>
+      </form>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

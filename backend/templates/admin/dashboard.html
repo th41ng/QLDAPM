@@ -1,0 +1,28 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Dashboard</h1>
+  <div class="grid">
+    <article class="card"><strong>Total Users</strong><p>{{ stats.users }}</p></article>
+    <article class="card"><strong>Admins</strong><p>{{ stats.admins }}</p></article>
+    <article class="card"><strong>Recruiters</strong><p>{{ stats.recruiters }}</p></article>
+    <article class="card"><strong>Candidates</strong><p>{{ stats.candidates }}</p></article>
+    <article class="card"><strong>Jobs</strong><p>{{ stats.jobs }}</p></article>
+    <article class="card"><strong>Applications</strong><p>{{ stats.applications }}</p></article>
+  </div>
+  <div class="split">
+    <article class="card">
+      <h2>Recent Users</h2>
+      {% for user in recent_users %}
+        <div class="row"><span>{{ user.full_name }}</span><span>{{ user.role }} / {{ user.status }}</span></div>
+      {% endfor %}
+    </article>
+    <article class="card">
+      <h2>Recent Jobs</h2>
+      {% for job in recent_jobs %}
+        <div class="row"><span>{{ job.title }}</span><span>{{ job.status }}</span></div>
+      {% endfor %}
+    </article>
+  </div>
+</section>
+{% endblock %}
