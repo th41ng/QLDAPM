@@ -106,6 +106,7 @@ export const api = {
       }),
     myApplications: () => apiRequest("/applications/mine"),
     recruiterApplications: () => apiRequest("/applications/recruiter"),
+    recruiterApplicationResume: (applicationId) => apiRequest(`/applications/${applicationId}/resume`),
     updateStatus: (id, status) =>
       apiRequest(`/applications/${id}/status`, {
         method: "PATCH",
