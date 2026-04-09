@@ -1,6 +1,6 @@
 export default function EmployerFilterChips({ filters, activeFilter, onChange }) {
   return (
-    <div className="filter-pills filter-pills--landing mt-5 flex flex-wrap gap-3">
+    <div className="filter-pills filter-pills--landing" style={{ marginTop: "1.25rem", display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
       {filters.map((filter) => {
         const active = activeFilter === filter.value;
         return (
@@ -8,11 +8,7 @@ export default function EmployerFilterChips({ filters, activeFilter, onChange })
             key={filter.value}
             type="button"
             onClick={() => onChange(active ? "all" : filter.value)}
-            className={`chip rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-              active
-                ? "active-chip border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-100"
-                : "border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50"
-            }`}
+            className={active ? "rw-btn-chip rw-btn-chip--active" : "rw-btn-chip"}
           >
             {filter.label}
           </button>

@@ -221,10 +221,10 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
       <ResumeTabs activeTab={activeTab} onChange={setTab} />
       <ResumeStats resumes={resumes} />
 
-      {message ? <div className="rounded-[20px] border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-700">{message}</div> : null}
+      {message ? <div className="rw-alert-info">{message}</div> : null}
 
       {(activeTab === "list" || activeTab === "create") ? (
-        <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="rw-workspace-layout">
           <ResumeUploadCard
             file={uploadFile}
             uploads={uploadedResumes}
@@ -233,7 +233,7 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
             busy={busy}
           />
 
-          <div className="grid gap-5">
+          <div className="rw-workspace-right">
             {activeTab === "create" ? (
               <ResumeForm
                 values={manual}
@@ -260,7 +260,7 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
       {activeTab === "templates" ? <ResumeTemplateGrid templates={cvTemplates} onUseTemplate={handleUseTemplate} /> : null}
 
       {draftSavedAt && activeTab === "create" ? (
-        <div className="text-right text-sm text-slate-500">Nháp gần nhất: {draftSavedAt}</div>
+        <div className="rw-draft-hint">Nháp gần nhất: {draftSavedAt}</div>
       ) : null}
 
       {previewResume ? <PreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} /> : null}
@@ -272,20 +272,18 @@ function PreviewModal({ resume, onClose }) {
   const structured = resume.structured_json || {};
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-[28px] bg-white p-6 shadow-[0_28px_80px_rgba(15,23,42,0.24)]">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+    <div className="rw-modal-backdrop">
+      <div className="rw-preview-modal">
+        <div className="rw-modal-head">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Preview</p>
-            <h3 className="mt-2 text-2xl font-semibold text-slate-950">{resume.title}</h3>
-            <p className="mt-1 text-sm text-slate-500">Mẫu: {resume.template_name || "Chưa chọn"}</p>
+            <p style={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.2em", color: "#1d4ed8" }}>Preview</p>
+            <h3 className="rw-heading-2xl">{resume.title}</h3>
+            <p style={{ marginTop: "0.25rem", fontSize: "0.875rem", color: "#64748b" }}>Mẫu: {resume.template_name || "Chưa chọn"}</p>
           </div>
-          <button type="button" className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700" onClick={onClose}>
-            Đóng
-          </button>
+          <button type="button" className="rw-btn-close" onClick={onClose}>Đóng</button>
         </div>
 
-        <div className="mt-6 grid gap-5">
+        <div className="rw-modal-body">
           <PreviewSection title="Thông tin cơ bản">
             <p><strong>Họ tên:</strong> {structured.full_name || "Chưa cập nhật"}</p>
             <p><strong>Headline:</strong> {structured.headline || "Chưa cập nhật"}</p>
@@ -302,9 +300,9 @@ function PreviewModal({ resume, onClose }) {
 
 function PreviewSection({ title, children, content }) {
   return (
-    <section className="rounded-[22px] border border-slate-200 bg-slate-50 p-5">
-      <h4 className="text-base font-semibold text-slate-900">{title}</h4>
-      <div className="mt-3 space-y-2 whitespace-pre-wrap text-sm leading-7 text-slate-600">{children || content || "Chưa có nội dung"}</div>
+    <section className="rw-preview-section">
+      <h4 style={{ fontSize: "1rem", fontWeight: 600, color: "#0f172a" }}>{title}</h4>
+      <div className="rw-pre-wrap" style={{ marginTop: "0.75rem", fontSize: "0.875rem", lineHeight: "1.75rem", color: "#475569" }}>{children || content || "Chưa có nội dung"}</div>
     </section>
   );
 }

@@ -112,7 +112,7 @@ export default function EmployersPage() {
         eyebrow="Dành cho bạn"
         title="Gợi ý cho bạn"
         description="Doanh nghiệp được ưu tiên theo mức độ phù hợp, công nghệ liên quan và mức độ tuyển dụng hiện tại."
-        action={<Link className="text-link text-sm font-semibold" to={ROUTES.jobs}>Xem tất cả việc làm</Link>}
+        action={<Link className="text-link" style={{ fontSize: "0.875rem", fontWeight: 600 }} to={ROUTES.jobs}>Xem tất cả việc làm</Link>}
       >
         {loading ? <EmptyState message="Đang phân tích dữ liệu công ty phù hợp..." /> : null}
         {!loading && recommendedCompanies.length ? (
@@ -154,22 +154,20 @@ export default function EmployersPage() {
         title="Khám phá theo ngành"
         description="Một lớp điều hướng nhanh để thu gọn danh sách công ty theo lĩnh vực đang tuyển mạnh."
       >
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rw-industry-grid">
           {industries.map((industry) => (
             <button
               key={industry.name}
               type="button"
               onClick={() => setActiveFilter(industry.filterValue)}
-              className="rounded-[22px] border border-slate-200 bg-white p-5 text-left shadow-[0_12px_28px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_18px_36px_rgba(29,78,216,0.12)]"
+              className="rw-industry-card"
             >
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Ngành</span>
-              <h3 className="mt-3 text-lg font-semibold text-slate-900">{industry.name}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{industry.count} công ty, {industry.openings} vị trí đang mở</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rw-muted-xs rw-muted-xs--blue">Ngành</span>
+              <h3 style={{ marginTop: "0.75rem", fontSize: "1.125rem", fontWeight: 600, color: "#0f172a" }}>{industry.name}</h3>
+              <p style={{ marginTop: "0.5rem", fontSize: "0.875rem", lineHeight: "1.5rem", color: "#475569" }}>{industry.count} công ty, {industry.openings} vị trí đang mở</p>
+              <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                 {industry.tags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                    {tag}
-                  </span>
+                  <span key={tag} className="rw-employer-tag">{tag}</span>
                 ))}
               </div>
             </button>
@@ -342,7 +340,7 @@ function readStoredIds(key) {
 
 function EmptyState({ message }) {
   return (
-    <div className="rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-5 py-6 text-sm text-slate-600">
+    <div className="rw-resume-empty">
       {message}
     </div>
   );

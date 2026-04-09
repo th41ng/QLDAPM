@@ -155,38 +155,38 @@ export default function RecruiterJobsPage() {
 
   return (
     <div className="landing-page recruiter-jobs-page">
-      <section className="landing-section panel rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_40px_rgba(15,23,42,0.06)] md:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
+      <section className="landing-section panel rw-card-lg">
+        <div className="rw-hero-layout">
+          <div className="rw-hero-text">
             <span className="eyebrow">Recruiter workspace</span>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">Quản lý bài tuyển dụng</h1>
-            <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
+            <h1 className="rw-heading-xl">Quản lý bài tuyển dụng</h1>
+            <p style={{ marginTop: "0.75rem", fontSize: "0.875rem", lineHeight: "1.75rem", color: "#475569" }}>
               Tạo, chỉnh sửa và theo dõi các bài đăng tuyển dụng của công ty. Giao diện ưu tiên thao tác nhanh, rõ trạng thái và dễ rà lại nội dung.
             </p>
           </div>
-          <button type="button" className="btn rounded-2xl px-5 py-3 text-sm font-semibold shadow-none" onClick={openCreateForm}>
+          <button type="button" className="btn" onClick={openCreateForm}>
             + Đăng tuyển dụng
           </button>
         </div>
       </section>
 
-      <section className="landing-section panel rounded-[26px] border border-slate-200 bg-white p-5 shadow-[0_16px_34px_rgba(15,23,42,0.05)]">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_220px_220px]">
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-700">Tìm theo tiêu đề</span>
+      <section className="landing-section panel rw-card">
+        <div className="rw-filter-grid">
+          <label className="rw-field">
+            <span className="rw-label-sm">Tìm theo tiêu đề</span>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Nhập tiêu đề bài tuyển dụng"
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-blue-200 focus:bg-white"
+              className="rw-input"
             />
           </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-700">Lọc theo location</span>
+          <label className="rw-field">
+            <span className="rw-label-sm">Lọc theo location</span>
             <select
               value={locationFilter}
               onChange={(event) => setLocationFilter(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-blue-200 focus:bg-white"
+              className="rw-input"
             >
               <option value="all">Tất cả location</option>
               {locationOptions.map((location) => (
@@ -194,12 +194,12 @@ export default function RecruiterJobsPage() {
               ))}
             </select>
           </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-700">Lọc theo status</span>
+          <label className="rw-field">
+            <span className="rw-label-sm">Lọc theo status</span>
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-blue-200 focus:bg-white"
+              className="rw-input"
             >
               {STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -209,30 +209,31 @@ export default function RecruiterJobsPage() {
         </div>
       </section>
 
-      {message ? <div className="rounded-[20px] border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-700">{message}</div> : null}
+      {message ? <div className="rw-alert-info">{message}</div> : null}
 
       {loading ? <StateCard title="Đang tải bài tuyển dụng" description="Hệ thống đang lấy danh sách bài đăng của công ty." /> : null}
       {!loading && error ? <StateCard title="Không thể tải dữ liệu" description={error} tone="error" /> : null}
       {!loading && !error && !filteredJobs.length ? <StateCard title="Chưa có bài tuyển dụng phù hợp" description="Thử thay đổi bộ lọc hoặc tạo bài tuyển dụng mới để bắt đầu." tone="empty" /> : null}
 
       {!loading && !error && filteredJobs.length ? (
-        <section className="grid gap-4 xl:grid-cols-2">
+        <section className="rw-jobs-grid">
           {filteredJobs.map((job) => (
-            <article key={job.id} className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_14px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_22px_40px_rgba(29,78,216,0.10)]">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="truncate text-xl font-semibold text-slate-900">{job.title || "Chưa có tiêu đề"}</h3>
+            <article key={job.id} className="rw-job-article">
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div className="rw-job-header">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="rw-job-title-wrap">
+                      <h3 className="rw-truncate" style={{ fontSize: "1.25rem", fontWeight: 600, color: "#0f172a" }}>{job.title || "Chưa có tiêu đề"}</h3>
                       <StatusBadge status={job.status} />
                     </div>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{job.summary || "Chưa có tóm tắt cho bài tuyển dụng này."}</p>
+                    <p style={{ marginTop: "0.5rem", fontSize: "0.875rem", lineHeight: "1.5rem", color: "#475569" }}>{job.summary || "Chưa có tóm tắt cho bài tuyển dụng này."}</p>
                   </div>
-                  <div className="shrink-0">
+                  <div style={{ flexShrink: 0 }}>
                     <select
                       value={job.status || "draft"}
                       onChange={(event) => handleStatusChange(job, event.target.value)}
-                      className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-blue-200 focus:bg-white"
+                      className="rw-input-sm"
+                      style={{ height: "2.5rem" }}
                     >
                       {STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -241,23 +242,17 @@ export default function RecruiterJobsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 rounded-[20px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 md:grid-cols-2">
+                <div className="rw-meta-grid">
                   <MetaItem label="Location" value={job.location || "Chưa cập nhật"} />
                   <MetaItem label="Tạo lúc" value={formatDate(job.created_at)} />
                   <MetaItem label="Cập nhật" value={formatDate(job.updated_at)} />
                   <MetaItem label="Trạng thái" value={mapStatusLabel(job.status)} />
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700" onClick={() => setViewingJob(job)}>
-                    Xem
-                  </button>
-                  <button type="button" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700" onClick={() => openEditForm(job)}>
-                    Sửa
-                  </button>
-                  <button type="button" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100" onClick={() => handleDelete(job)}>
-                    Xóa
-                  </button>
+                <div className="rw-job-actions">
+                  <button type="button" className="rw-btn-outline" onClick={() => setViewingJob(job)}>Xem</button>
+                  <button type="button" className="rw-btn-outline" onClick={() => openEditForm(job)}>Sửa</button>
+                  <button type="button" className="rw-btn-danger" onClick={() => handleDelete(job)}>Xóa</button>
                 </div>
               </div>
             </article>
@@ -284,28 +279,26 @@ export default function RecruiterJobsPage() {
 
 function JobFormModal({ form, editing, submitting, onClose, onChange, onSubmit, onSaveDraft }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-auto rounded-[28px] bg-white p-6 shadow-[0_32px_80px_rgba(15,23,42,0.24)] md:p-7">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+    <div className="rw-modal-backdrop">
+      <div className="rw-modal">
+        <div className="rw-modal-head">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Recruiter editor</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">{editing ? "Chỉnh sửa bài tuyển dụng" : "Tạo bài tuyển dụng mới"}</h2>
-            <p className="mt-1 text-sm text-slate-500">Chỉ dùng các trường đang có trong API hiện tại để tránh lệch dữ liệu backend.</p>
+            <p style={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.18em", color: "#1d4ed8" }}>Recruiter editor</p>
+            <h2 className="rw-heading-2xl">{editing ? "Chỉnh sửa bài tuyển dụng" : "Tạo bài tuyển dụng mới"}</h2>
+            <p style={{ marginTop: "0.25rem", fontSize: "0.875rem", color: "#64748b" }}>Chỉ dùng các trường đang có trong API hiện tại để tránh lệch dữ liệu backend.</p>
           </div>
-          <button type="button" className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700" onClick={onClose}>
-            Đóng
-          </button>
+          <button type="button" className="rw-btn-close" onClick={onClose}>Đóng</button>
         </div>
 
         <form
-          className="mt-6 grid gap-5"
+          className="rw-modal-body"
           onSubmit={(event) => {
             event.preventDefault();
             onSubmit();
           }}
         >
           <FormSection title="Thông tin cơ bản" description="Thiết lập tiêu đề, tóm tắt ngắn và location để bài đăng dễ scan hơn trong danh sách.">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="rw-grid-2">
               <Field label="Title">
                 <input value={form.title} onChange={(event) => onChange("title", event.target.value)} placeholder="Ví dụ: Frontend Developer" />
               </Field>
@@ -319,7 +312,7 @@ function JobFormModal({ form, editing, submitting, onClose, onChange, onSubmit, 
           </FormSection>
 
           <FormSection title="Nội dung công việc" description="Tập trung vào mô tả công việc và trách nhiệm chính của vị trí đang tuyển.">
-            <div className="grid gap-4">
+            <div style={{ display: "grid", gap: "1rem" }}>
               <Field label="Description">
                 <textarea rows="6" value={form.description} onChange={(event) => onChange("description", event.target.value)} placeholder="Mô tả công việc chi tiết" />
               </Field>
@@ -335,13 +328,11 @@ function JobFormModal({ form, editing, submitting, onClose, onChange, onSubmit, 
             </Field>
           </FormSection>
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="rw-form-actions">
             {!editing ? (
-              <button type="button" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700" onClick={onSaveDraft}>
-                Lưu nháp
-              </button>
+              <button type="button" className="rw-btn-outline-lg" onClick={onSaveDraft}>Lưu nháp</button>
             ) : null}
-            <button type="submit" className="btn rounded-2xl px-5 py-3 text-sm font-semibold shadow-none" disabled={submitting}>
+            <button type="submit" className="btn" disabled={submitting}>
               {submitting ? "Đang lưu..." : editing ? "Cập nhật" : "Đăng job"}
             </button>
           </div>
@@ -353,29 +344,27 @@ function JobFormModal({ form, editing, submitting, onClose, onChange, onSubmit, 
 
 function JobDetailModal({ job, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-auto rounded-[28px] bg-white p-6 shadow-[0_32px_80px_rgba(15,23,42,0.24)] md:p-7">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+    <div className="rw-modal-backdrop">
+      <div className="rw-modal">
+        <div className="rw-modal-head">
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-semibold text-slate-950">{job.title}</h2>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem" }}>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#020617" }}>{job.title}</h2>
               <StatusBadge status={job.status} />
             </div>
-            <p className="mt-2 text-sm text-slate-500">{job.location || "Chưa cập nhật location"}</p>
+            <p style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#64748b" }}>{job.location || "Chưa cập nhật location"}</p>
           </div>
-          <button type="button" className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700" onClick={onClose}>
-            Đóng
-          </button>
+          <button type="button" className="rw-btn-close" onClick={onClose}>Đóng</button>
         </div>
 
-        <div className="mt-6 grid gap-5">
+        <div className="rw-modal-body">
           <DetailSection title="Summary" content={job.summary} />
           <DetailSection title="Description" content={job.description} />
           <DetailSection title="Responsibilities" content={job.responsibilities} />
           <DetailSection title="Requirements" content={job.requirements} />
-          <section className="rounded-[22px] border border-slate-200 bg-slate-50 p-5">
-            <h3 className="text-base font-semibold text-slate-900">Thông tin hệ thống</h3>
-            <div className="mt-3 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
+          <section className="rw-card-subtle">
+            <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#0f172a" }}>Thông tin hệ thống</h3>
+            <div className="rw-meta-grid" style={{ marginTop: "0.75rem" }}>
               <MetaItem label="Location" value={job.location || "Chưa cập nhật"} />
               <MetaItem label="Status" value={mapStatusLabel(job.status)} />
               <MetaItem label="Tạo lúc" value={formatDate(job.created_at)} />
@@ -390,10 +379,10 @@ function JobDetailModal({ job, onClose }) {
 
 function FormSection({ title, description, children }) {
   return (
-    <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_14px_30px_rgba(15,23,42,0.05)]">
-      <div className="mb-4 border-b border-slate-100 pb-4">
-        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
+    <section className="rw-form-section">
+      <div className="rw-section-divider">
+        <h3 style={{ fontSize: "1.125rem", fontWeight: 600, color: "#0f172a" }}>{title}</h3>
+        <p style={{ marginTop: "0.25rem", fontSize: "0.875rem", lineHeight: "1.5rem", color: "#64748b" }}>{description}</p>
       </div>
       {children}
     </section>
@@ -402,17 +391,17 @@ function FormSection({ title, description, children }) {
 
 function DetailSection({ title, content }) {
   return (
-    <section className="rounded-[22px] border border-slate-200 bg-slate-50 p-5">
-      <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-      <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-600">{content || "Chưa có nội dung"}</p>
+    <section className="rw-card-subtle">
+      <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#0f172a" }}>{title}</h3>
+      <p className="rw-pre-wrap" style={{ marginTop: "0.75rem", fontSize: "0.875rem", lineHeight: "1.75rem", color: "#475569" }}>{content || "Chưa có nội dung"}</p>
     </section>
   );
 }
 
 function Field({ label, children, full }) {
   return (
-    <label className={`grid gap-2 ${full ? "md:col-span-2" : ""}`}>
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+    <label className={full ? "rw-field-full" : "rw-field"}>
+      <span className="rw-label-sm">{label}</span>
       {children}
     </label>
   );
@@ -420,41 +409,26 @@ function Field({ label, children, full }) {
 
 function MetaItem({ label, value }) {
   return (
-    <div className="grid gap-1">
-      <span className="text-xs uppercase tracking-[0.14em] text-slate-400">{label}</span>
-      <strong className="text-sm font-semibold text-slate-800">{value}</strong>
+    <div className="rw-meta-item">
+      <span className="rw-muted-xs">{label}</span>
+      <strong className="rw-meta-sm">{value}</strong>
     </div>
   );
 }
 
 function StateCard({ title, description, tone = "default" }) {
-  const toneClass =
-    tone === "error"
-      ? "border-rose-200 bg-rose-50 text-rose-700"
-      : tone === "empty"
-        ? "border-slate-200 bg-slate-50 text-slate-600"
-        : "border-blue-100 bg-blue-50 text-blue-700";
-
+  const toneClass = tone === "error" ? "rw-state-error" : tone === "empty" ? "rw-state-empty" : "rw-state-default";
   return (
-    <section className={`rounded-[24px] border px-5 py-8 shadow-[0_14px_30px_rgba(15,23,42,0.04)] ${toneClass}`}>
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="mt-2 text-sm leading-6">{description}</p>
+    <section className={toneClass}>
+      <h3 style={{ fontSize: "1.125rem", fontWeight: 600 }}>{title}</h3>
+      <p style={{ marginTop: "0.5rem", fontSize: "0.875rem", lineHeight: "1.5rem" }}>{description}</p>
     </section>
   );
 }
 
 function StatusBadge({ status }) {
-  const config = {
-    draft: "border-slate-200 bg-slate-100 text-slate-700",
-    published: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    closed: "border-amber-200 bg-amber-50 text-amber-700",
-  };
-
-  return (
-    <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${config[status] || config.draft}`}>
-      {mapStatusLabel(status)}
-    </span>
-  );
+  const cls = status === "published" ? "rw-status-published" : status === "closed" ? "rw-status-closed" : "rw-status-draft";
+  return <span className={cls}>{mapStatusLabel(status)}</span>;
 }
 
 function mapStatusLabel(status) {
