@@ -11,7 +11,10 @@ load_dotenv(ROOT_DIR / ".env")
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "jobportal-secret-key-change-me-to-a-long-random-string")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jobportal-jwt-secret-key-change-me-to-a-long-random-string")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///job_portal.db")
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        "DATABASE_URL",
+        "mysql+pymysql://jobportal_user:JobPortal123%21@127.0.0.1:3306/job_portal",
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_SORT_KEYS = False
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "instance/uploads")

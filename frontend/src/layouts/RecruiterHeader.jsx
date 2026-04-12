@@ -53,7 +53,7 @@ export default function RecruiterHeader() {
         </nav>
 
         <div className="recruiter-actions">
-          <Link className="btn btn-small recruiter-cta" to={ROUTES.recruiter.jobs}>
+          <Link className="btn btn-small recruiter-cta" to={ROUTES.recruiter.jobCreate}>
             + Đăng tin tuyển dụng
           </Link>
 

@@ -86,24 +86,33 @@ def extract_text_from_upload(path: str) -> str:
 
 
 def generate_pdf_from_resume(data: dict, output_path: str) -> str:
+    def _text(value):
+        if value is None:
+            return ""
+        if isinstance(value, list):
+            return ", ".join(str(item) for item in value)
+        if isinstance(value, dict):
+            return json.dumps(value, ensure_ascii=False)
+        return str(value)
+
     c = canvas.Canvas(output_path, pagesize=A4)
     width, height = A4
     y = height - 50
     lines = [
-        data.get("full_name", ""),
-        data.get("headline", ""),
+        _text(data.get("full_name", "")),
+        _text(data.get("headline", "")),
         "",
         "Summary:",
-        data.get("summary", ""),
+        _text(data.get("summary", "")),
         "",
         "Skills:",
-        data.get("skills", ""),
+        _text(data.get("skills", "")),
         "",
         "Experience:",
-        data.get("experience", ""),
+        _text(data.get("experience", "")),
         "",
         "Education:",
-        data.get("education", ""),
+        _text(data.get("education", "")),
     ]
     for line in lines:
         if y < 60:
@@ -116,10 +125,19 @@ def generate_pdf_from_resume(data: dict, output_path: str) -> str:
 
 
 def generate_docx_from_resume(data: dict, output_path: str) -> str:
+    def _text(value):
+        if value is None:
+            return ""
+        if isinstance(value, list):
+            return ", ".join(str(item) for item in value)
+        if isinstance(value, dict):
+            return json.dumps(value, ensure_ascii=False)
+        return str(value)
+
     doc = Document()
-    doc.add_heading(data.get("full_name", "Resume"), level=1)
+    doc.add_heading(_text(data.get("full_name", "Resume")) or "Resume", level=1)
     if data.get("headline"):
-        doc.add_paragraph(data["headline"])
+        doc.add_paragraph(_text(data["headline"]))
     for label, key in [
         ("Summary", "summary"),
         ("Skills", "skills"),
@@ -127,7 +145,7 @@ def generate_docx_from_resume(data: dict, output_path: str) -> str:
         ("Education", "education"),
     ]:
         doc.add_heading(label, level=2)
-        doc.add_paragraph(data.get(key, ""))
+        doc.add_paragraph(_text(data.get(key, "")))
     doc.save(output_path)
     return output_path
 

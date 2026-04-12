@@ -14,7 +14,7 @@ api_auth_bp = Blueprint("api_auth", __name__)
 
 
 def _issue_token(user: User):
-    token = create_access_token(identity=user.id, additional_claims={"role": user.role})
+    token = create_access_token(identity=str(user.id), additional_claims={"role": user.role})
     return json_ok(
         {
             "token": token,
@@ -335,7 +335,7 @@ def login_otp_verify():
 @api_auth_bp.get("/me")
 @jwt_required()
 def me():
-    user = get_user_by_id(get_jwt_identity())
+    user = get_user_by_id(int(get_jwt_identity()))
     if not user:
         return json_error("User not found.", 404)
     return json_ok(
@@ -346,6 +346,8 @@ def me():
             "role": user.role,
             "status": user.status,
             "auth_method_preference": user.auth_method_preference,
+            "phone": user.phone,
+            "avatar_url": user.avatar_url,
             "company": user.company.company_name if user.company else None,
         }
     )

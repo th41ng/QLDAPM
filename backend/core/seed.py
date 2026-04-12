@@ -1,4 +1,4 @@
-﻿from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from .extensions import db
 from ..models import CandidateProfile, Category, Company, CvTemplate, JobPosting, Resume, Tag, User
@@ -560,6 +560,15 @@ def seed_initial_data():
             )
             job.tags = [tags[slugify(name)] for name in job_data["tags"]]
 
+    preview_urls = {
+        "modern-blue": "https://res.cloudinary.com/dqukehyry/image/upload/v1775393343/nguyen-thi-truc-mai_4010758_561084a9cd7112f2_4010758_orgnyz.pdf",
+        "ats-clean": "https://res.cloudinary.com/dqukehyry/image/upload/v1775393343/nguyen-thi-truc-mai_4010756_Joboko_4fd074991dc96370_4010756_rgglu9.pdf",
+        "creative-minimal": "https://res.cloudinary.com/dqukehyry/image/upload/v1775393344/nguyen-thi-truc-mai_4010752_Joboko_84c60ffaca3a6456_4010752_ag2sng.pdf",
+        "product-designer": "https://res.cloudinary.com/dqukehyry/image/upload/v1775393344/nguyen-thi-truc-mai_4010753_Joboko_881080294f84b32f_4010753_ptymya.pdf",
+        "data-analyst": "https://res.cloudinary.com/dqukehyry/image/upload/v1775393344/nguyen-thi-truc-mai_4010748_Joboko_8250e56278eb8bea_4010748_g1muvd.pdf",
+        "hr-executive": "https://res.cloudinary.com/dqukehyry/image/upload/v1775393344/nguyen-thi-truc-mai_4010751_Joboko_b88f4eb6aec594f1_4010751_enmjel.pdf",
+        "marketing-pro": "https://res.cloudinary.com/dqukehyry/image/upload/v1775393345/tien-dinh-bich_4010744_Joboko_cab46210c308a2a6_4010744_gbarcg.pdf",
+    }
     for name, slug_value, summary in [
         ("Modern Blue", "modern-blue", "Mẫu CV hiện đại cho ứng viên công nghệ"),
         ("ATS Clean", "ats-clean", "Thiết kế tối giản tối ưu cho hệ thống ATS"),
@@ -568,11 +577,6 @@ def seed_initial_data():
         ("Data Analyst", "data-analyst", "Tập trung vào dữ liệu, bảng biểu và KPI"),
         ("HR Executive", "hr-executive", "Mẫu CV cho nhân sự và tuyển dụng"),
         ("Marketing Pro", "marketing-pro", "Mẫu CV cho digital marketing và content"),
-        ("Executive Classic", "executive-classic", "Phong cách cổ điển cho quản lý"),
-        ("Developer Focus", "developer-focus", "Nổi bật kỹ năng kỹ thuật và dự án"),
-        ("Finance Insight", "finance-insight", "Phù hợp tài chính, kế toán và phân tích"),
-        ("Sales Growth", "sales-growth", "Dành cho sales và account executive"),
-        ("Fresh Graduate", "fresh-graduate", "Mẫu CV cho sinh viên mới ra trường"),
     ]:
         _ensure_cv_template(
             name=name,
@@ -580,7 +584,7 @@ def seed_initial_data():
             summary=summary,
             description=summary,
             thumbnail_url=None,
-            preview_url=None,
+            preview_url=preview_urls.get(slugify(slug_value)),
             file_format="both",
         )
 

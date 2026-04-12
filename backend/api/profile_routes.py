@@ -15,7 +15,7 @@ api_profiles_bp = Blueprint("api_profiles", __name__)
 @jwt_required()
 @role_required("candidate")
 def get_profile():
-    user = get_user_by_id(get_jwt_identity())
+    user = get_user_by_id(int(get_jwt_identity()))
     profile = get_profile_by_user_id(user.id)
     return json_ok(profile_to_dict(profile))
 
@@ -25,7 +25,7 @@ def get_profile():
 @jwt_required()
 @role_required("candidate")
 def update_profile():
-    user = get_user_by_id(get_jwt_identity())
+    user = get_user_by_id(int(get_jwt_identity()))
     data = request.get_json(force=True) if request.is_json else request.form.to_dict(flat=True)
     profile = get_profile_by_user_id(user.id)
     if not profile:

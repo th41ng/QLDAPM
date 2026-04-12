@@ -23,6 +23,10 @@ def role_required(*roles):
         def wrapper(*args, **kwargs):
             verify_jwt_in_request()
             identity = get_jwt_identity()
+            try:
+                identity = int(identity)
+            except (TypeError, ValueError):
+                return json_error("Unauthorized", 401)
             user = User.query.get(identity)
             if not user or user.role not in roles:
                 return json_error("Forbidden", 403)

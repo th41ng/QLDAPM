@@ -3,9 +3,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5001
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
 
-function buildHeaders(initHeaders = {}, body) {
+function buildHeaders(initHeaders = {}, body, includeAuth = true) {
   const headers = new Headers(initHeaders);
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = includeAuth ? localStorage.getItem(TOKEN_KEY) : null;
 
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
@@ -49,7 +49,7 @@ async function parseResponse(response) {
 export async function apiRequest(path, options = {}) {
   const response = await fetch(buildUrl(path), {
     ...options,
-    headers: buildHeaders(options.headers, options.body),
+    headers: buildHeaders(options.headers, options.body, options.auth !== false),
   });
 
   return parseResponse(response);

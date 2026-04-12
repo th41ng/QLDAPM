@@ -1,4 +1,4 @@
-export default function ResumeStats({ resumes }) {
+﻿export default function ResumeStats({ resumes }) {
   const manualCount = resumes.filter((resume) => resume.source_type === "manual").length;
   const uploadCount = resumes.filter((resume) => resume.source_type === "upload").length;
   const primaryCount = resumes.filter((resume) => resume.is_primary).length;

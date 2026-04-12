@@ -125,6 +125,11 @@ Các biến quan trọng:
 - `OTP_MAX_SENDS_PER_HOUR=5`
 - `FRONTEND_URL=http://127.0.0.1:5173`
 
+Lưu ý:
+
+- Project hiện dùng MySQL làm database mặc định.
+- Không còn fallback SQLite cho backend nữa.
+
 Public API cho trang chủ và auth:
 
 - `GET /api/tags/categories`

@@ -23,7 +23,7 @@ api_applications_bp = Blueprint("api_applications", __name__)
 @jwt_required()
 @role_required("candidate")
 def create_application():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json(force=True)
     job_id = data.get("job_id")
     resume_id = data.get("resume_id")
@@ -55,7 +55,7 @@ def create_application():
 @jwt_required()
 @role_required("candidate")
 def my_applications():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     apps = list_candidate_applications(user_id)
     return json_ok([application_to_dict(app) for app in apps])
 
@@ -64,7 +64,7 @@ def my_applications():
 @jwt_required()
 @role_required("recruiter", "admin")
 def recruiter_applications():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = get_user_by_id(user_id)
     apps = list_recruiter_applications(None if user.role == "admin" else user_id)
     return json_ok([application_to_dict(app) for app in apps])
@@ -74,7 +74,7 @@ def recruiter_applications():
 @jwt_required()
 @role_required("recruiter", "admin")
 def update_status(application_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     app = get_application_by_id(application_id)
     if not app:
         return json_error("Application not found.", 404)
@@ -92,7 +92,7 @@ def update_status(application_id):
 @jwt_required()
 @role_required("recruiter", "admin")
 def get_application_resume(application_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = get_user_by_id(user_id)
     app = get_application_by_id(application_id)
     if not app:

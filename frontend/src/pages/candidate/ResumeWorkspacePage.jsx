@@ -1,140 +1,147 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../api";
-import ResumeForm from "../../components/resume/ResumeForm";
-import ResumeHeader from "../../components/resume/ResumeHeader";
-import ResumeList from "../../components/resume/ResumeList";
+import ResumeCard from "../../components/resume/ResumeCard";
+import ResumePreviewModal from "../../components/resume/ResumePreviewModal";
 import ResumeStats from "../../components/resume/ResumeStats";
 import ResumeTabs from "../../components/resume/ResumeTabs";
-import ResumeTemplateGrid from "../../components/resume/ResumeTemplateGrid";
 import ResumeUploadCard from "../../components/resume/ResumeUploadCard";
-import { cvTemplates } from "../../data/constants";
 import { ROUTES } from "../../routes";
 
-const EMPTY_FORM = {
-  id: null,
-  title: "CV mới",
-  template_name: "Modern Blue",
-  full_name: "",
-  headline: "",
-  summary: "",
-  skills: "",
-  experience: "",
-  education: "",
-  desired_location: "",
-  years_experience: 0,
-  is_primary: true,
-};
+const FILTERS = [
+  { id: "all", label: "Tất cả" },
+  { id: "manual", label: "CV tạo" },
+  { id: "upload", label: "CV upload" },
+];
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Mới nhất" },
+  { value: "oldest", label: "Cũ nhất" },
+  { value: "primary", label: "CV chính trước" },
+];
+
+function matchesQuery(resume, query) {
+  if (!query) return true;
+  const structured = resume.structured_json || {};
+  const haystack = [
+    resume.title,
+    resume.template_name,
+    resume.original_filename,
+    structured.full_name,
+    structured.headline,
+    structured.summary,
+    structured.skills,
+    (resume.tags || []).map((tag) => tag.name).join(" "),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query.toLowerCase());
+}
+
+function buildAuthHeaders() {
+  const token = localStorage.getItem("auth_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export default function ResumeWorkspacePage({ defaultTab = "list" }) {
   const navigate = useNavigate();
-  const location = useLocation();
+  const uploadButtonRef = useRef(null);
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [resumes, setResumes] = useState([]);
-  const [message, setMessage] = useState("");
-  const [manual, setManual] = useState(EMPTY_FORM);
-  const [draftSavedAt, setDraftSavedAt] = useState("");
-  const [previewResume, setPreviewResume] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [filterMode, setFilterMode] = useState("all");
+  const [sortMode, setSortMode] = useState("newest");
+  const [query, setQuery] = useState("");
   const [uploadFile, setUploadFile] = useState(null);
-
-  const uploadedResumes = useMemo(() => resumes.filter((resume) => resume.source_type === "upload").slice(0, 4), [resumes]);
-
-  const loadResumes = () => api.resumes.list().then(setResumes).catch(() => setResumes([]));
-
-  useEffect(() => {
-    loadResumes();
-  }, []);
+  const [previewResume, setPreviewResume] = useState(null);
 
   useEffect(() => {
     setActiveTab(defaultTab);
-  }, [defaultTab, location.pathname]);
+  }, [defaultTab]);
+
+  const loadWorkspace = async () => {
+    setLoading(true);
+    try {
+      const data = await api.resumes.list().catch(() => []);
+      setResumes(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setResumes([]);
+      setMessage(error.message || "Không thể tải danh sách CV.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadWorkspace();
+  }, []);
 
   const setTab = (tab) => {
     setActiveTab(tab);
-    if (tab === "templates") {
-      navigate(ROUTES.candidate.templates);
-      return;
+    navigate(tab === "create" ? ROUTES.candidate.resumeCreate : ROUTES.candidate.resumes);
+  };
+
+  const filteredResumes = useMemo(() => {
+    let items = [...resumes];
+
+    if (filterMode === "manual") {
+      items = items.filter((resume) => resume.source_type === "manual");
+    } else if (filterMode === "upload") {
+      items = items.filter((resume) => resume.source_type === "upload");
     }
-    navigate(ROUTES.candidate.resumes);
-  };
 
-  const handleChange = (field, value) => {
-    setManual((current) => ({ ...current, [field]: value }));
-  };
+    items = items.filter((resume) => matchesQuery(resume, query));
 
-  const handleSaveDraft = () => {
-    localStorage.setItem("candidate_resume_draft", JSON.stringify(manual));
-    const timestamp = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-    setDraftSavedAt(timestamp);
-    setMessage(`Đã lưu nháp lúc ${timestamp}.`);
-  };
-
-  const handlePreview = () => {
-    setPreviewResume({
-      title: manual.title,
-      structured_json: {
-        full_name: manual.full_name,
-        headline: manual.headline,
-        summary: manual.summary,
-        skills: manual.skills,
-        experience: manual.experience,
-        education: manual.education,
-      },
-      template_name: manual.template_name,
-      source_type: "manual",
-      is_primary: manual.is_primary,
-    });
-  };
-
-  const handleSubmit = async () => {
-    try {
-      setBusy(true);
-      const payload = {
-        title: manual.title,
-        template_name: manual.template_name,
-        full_name: manual.full_name,
-        headline: manual.headline,
-        summary: manual.summary,
-        skills: manual.skills,
-        experience: manual.experience,
-        education: manual.education,
-        desired_location: manual.desired_location,
-        years_experience: Number(manual.years_experience || 0),
-        is_primary: manual.is_primary,
-        structured_json: {
-          full_name: manual.full_name,
-          headline: manual.headline,
-          summary: manual.summary,
-          skills: manual.skills,
-          experience: manual.experience,
-          education: manual.education,
-          desired_location: manual.desired_location,
-          years_experience: Number(manual.years_experience || 0),
-        },
-        raw_text: JSON.stringify(manual),
-      };
-
-      if (manual.id) {
-        await api.resumes.update(manual.id, payload);
-        setMessage("Đã cập nhật CV.");
-      } else {
-        await api.resumes.createManual(payload);
-        setMessage("Đã tạo CV mới.");
+    items.sort((a, b) => {
+      const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+      const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+      if (sortMode === "oldest") return dateA - dateB;
+      if (sortMode === "primary") {
+        if (Boolean(a.is_primary) !== Boolean(b.is_primary)) {
+          return Number(Boolean(b.is_primary)) - Number(Boolean(a.is_primary));
+        }
+        return dateB - dateA;
       }
-      setManual(EMPTY_FORM);
-      setActiveTab("list");
-      navigate(ROUTES.candidate.resumes);
-      loadResumes();
+      return dateB - dateA;
+    });
+
+    return items;
+  }, [resumes, filterMode, query, sortMode]);
+
+  const openExport = async (resumeId, format = "pdf", popup = null) => {
+    const response = await fetch(api.resumes.exportUrl(resumeId, format), {
+      headers: buildAuthHeaders(),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || `Không thể tải file (${response.status}).`);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    if (popup) {
+      popup.location.href = url;
+    } else {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+  };
+
+  const handleDownload = async (resume) => {
+    const popup = window.open("", "_blank", "noopener,noreferrer");
+    try {
+      await openExport(resume.id, "pdf", popup);
     } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setBusy(false);
+      if (popup) popup.close();
+      setMessage(error.message || "Không thể tải file PDF.");
     }
   };
 
-  const handleUpload = async (fileFromHeader) => {
-    const file = fileFromHeader || uploadFile;
+  const handleUpload = async (fileFromInput) => {
+    const file = fileFromInput || uploadFile;
     if (!file) {
       setMessage("Chọn file trước khi upload.");
       return;
@@ -148,161 +155,178 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
       formData.append("is_primary", resumes.length ? "false" : "true");
       await api.resumes.upload(formData);
       setUploadFile(null);
-      setMessage("Đã upload CV.");
-      setActiveTab("list");
-      navigate(ROUTES.candidate.resumes);
-      loadResumes();
+      setMessage("Đã upload CV vào database.");
+      await loadWorkspace();
     } catch (error) {
-      setMessage(error.message);
+      setMessage(error.message || "Không thể upload CV.");
     } finally {
       setBusy(false);
     }
   };
 
-  const handleUseTemplate = (template) => {
-    setManual((current) => ({ ...current, template_name: template.name, title: `${template.name} - CV mới` }));
-    setActiveTab("create");
-    navigate(ROUTES.candidate.resumes);
+  const handlePreview = (resume) => {
+    setPreviewResume(resume);
   };
 
   const handleEditResume = (resume) => {
-    const structured = resume.structured_json || {};
-    setManual({
-      id: resume.id,
-      title: resume.title || EMPTY_FORM.title,
-      template_name: resume.template_name || "Modern Blue",
-      full_name: structured.full_name || "",
-      headline: structured.headline || "",
-      summary: structured.summary || "",
-      skills: structured.skills || "",
-      experience: structured.experience || "",
-      education: structured.education || "",
-      desired_location: structured.desired_location || "",
-      years_experience: structured.years_experience || 0,
-      is_primary: Boolean(resume.is_primary),
-    });
-    setActiveTab("create");
-    navigate(ROUTES.candidate.resumes);
+    navigate(ROUTES.candidate.resumeCreate, { state: { resumeId: resume.id } });
   };
 
   const handleDeleteResume = async (resume) => {
-    const confirmed = window.confirm(`Xóa CV \"${resume.title}\"?`);
+    const confirmed = window.confirm(`Xóa CV "${resume.title}"?`);
     if (!confirmed) return;
 
     try {
+      setBusy(true);
       await api.resumes.remove(resume.id);
       setMessage("Đã xóa CV.");
-      if (manual.id === resume.id) {
-        setManual(EMPTY_FORM);
-      }
-      loadResumes();
+      await loadWorkspace();
     } catch (error) {
-      setMessage(error.message);
+      setMessage(error.message || "Không thể xóa CV.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSetPrimary = async (resume) => {
+    try {
+      setBusy(true);
+      await api.resumes.update(resume.id, { is_primary: true });
+      setMessage("Đã đặt làm CV chính.");
+      await loadWorkspace();
+    } catch (error) {
+      setMessage(error.message || "Không thể đổi CV chính.");
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <div className="landing-page">
-      <ResumeHeader
-        onCreate={() => {
-          setManual(EMPTY_FORM);
-          setTab("create");
-        }}
-        onUpload={(file) => {
-          if (file) {
-            setUploadFile(file);
-            handleUpload(file);
-            return;
-          }
-          setTab("list");
-        }}
-      />
+    <div className="landing-page candidate-cv-page">
+      <section className="landing-section candidate-cv-hero">
+        <div className="candidate-cv-hero-copy">
+          <span className="eyebrow">CV của tôi</span>
+          <h1 className="rw-heading-xl">Quản lý CV gọn gàng, rõ vai trò</h1>
+          <p className="lead">
+            Một nơi để theo dõi CV đã tạo, CV upload và CV đang dùng ứng tuyển. Thẻ CV hiển thị preview trực quan, thao tác nhanh và không lẫn với màn tạo CV.
+          </p>
+          <div className="candidate-cv-hero-tags">
+            <span className="candidate-cv-hero-tag">Preview PDF</span>
+            <span className="candidate-cv-hero-tag">Đặt CV chính</span>
+            <span className="candidate-cv-hero-tag">Tải file thật</span>
+          </div>
+        </div>
+
+        <div className="candidate-cv-hero-actions">
+          <button type="button" className="btn" onClick={() => setTab("create")}>Tạo CV</button>
+          <button type="button" className="rw-btn-outline-lg" onClick={() => uploadButtonRef.current?.click()}>
+            Upload CV
+          </button>
+          <input
+            ref={uploadButtonRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            style={{ display: "none" }}
+            onChange={(event) => {
+              const file = event.target.files?.[0] || null;
+              if (file) {
+                setUploadFile(file);
+                void handleUpload(file);
+              }
+              event.target.value = "";
+            }}
+          />
+        </div>
+      </section>
 
       <ResumeTabs activeTab={activeTab} onChange={setTab} />
       <ResumeStats resumes={resumes} />
 
       {message ? <div className="rw-alert-info">{message}</div> : null}
 
-      {(activeTab === "list" || activeTab === "create") ? (
-        <div className="rw-workspace-layout">
-          <ResumeUploadCard
-            file={uploadFile}
-            uploads={uploadedResumes}
-            onPickFile={setUploadFile}
-            onSubmitUpload={() => handleUpload()}
-            busy={busy}
-          />
+      <section className="candidate-cv-body">
+        <aside className="candidate-cv-aside">
+          <ResumeUploadCard file={uploadFile} onPickFile={setUploadFile} onSubmitUpload={() => handleUpload()} busy={busy} />
 
-          <div className="rw-workspace-right">
-            {activeTab === "create" ? (
-              <ResumeForm
-                values={manual}
-                onChange={handleChange}
-                onSaveDraft={handleSaveDraft}
-                onPreview={handlePreview}
-                onSubmit={handleSubmit}
-                saving={busy}
-                editingTitle={manual.id ? "Chỉnh sửa CV" : undefined}
-              />
-            ) : null}
+          <section className="rw-card candidate-cv-side-note">
+            <h3>Nguyên tắc quản lý</h3>
+            <p>
+              CV chính được làm nổi bật bằng viền xanh và badge. CV upload giữ nguyên file gốc, CV tạo từ mẫu có preview dữ liệu thật theo template đã chọn.
+            </p>
+          </section>
+        </aside>
 
-            <ResumeList
-              resumes={resumes}
-              onView={setPreviewResume}
-              onEdit={handleEditResume}
-              onDelete={handleDeleteResume}
-              exportUrl={api.resumes.exportUrl}
-            />
-          </div>
-        </div>
-      ) : null}
+        <main className="candidate-cv-main">
+          <section className="rw-card candidate-cv-toolbar">
+            <div className="candidate-cv-filter-chips" role="tablist" aria-label="Lọc CV">
+              {FILTERS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setFilterMode(item.id)}
+                  className={filterMode === item.id ? "candidate-cv-filter-chip candidate-cv-filter-chip--active" : "candidate-cv-filter-chip"}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-      {activeTab === "templates" ? <ResumeTemplateGrid templates={cvTemplates} onUseTemplate={handleUseTemplate} /> : null}
+            <div className="candidate-cv-toolbar-right">
+              <label className="candidate-cv-search">
+                <span>Tìm kiếm</span>
+                <input
+                  className="rw-input rw-input-search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Tên CV, template, tag, file upload..."
+                />
+              </label>
 
-      {draftSavedAt && activeTab === "create" ? (
-        <div className="rw-draft-hint">Nháp gần nhất: {draftSavedAt}</div>
-      ) : null}
+              <label className="candidate-cv-sort">
+                <span>Sắp xếp</span>
+                <select className="rw-input rw-input-sm" value={sortMode} onChange={(event) => setSortMode(event.target.value)}>
+                  {SORT_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </section>
 
-      {previewResume ? <PreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} /> : null}
+          {loading ? (
+            <div className="rw-state-default">
+              <h3>Đang tải CV từ database...</h3>
+              <p>Hệ thống đang lấy dữ liệu thật từ MySQL để dựng danh sách CV của bạn.</p>
+            </div>
+          ) : filteredResumes.length ? (
+            <div className="candidate-cv-grid">
+              {filteredResumes.map((resume) => (
+                <ResumeCard
+                  key={resume.id}
+                  resume={resume}
+                  active={Boolean(resume.is_primary)}
+                  onPreview={handlePreview}
+                  onEdit={handleEditResume}
+                  onDownload={handleDownload}
+                  onSetPrimary={handleSetPrimary}
+                  onDelete={handleDeleteResume}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rw-state-empty candidate-cv-empty">
+              <h3>Chưa có CV phù hợp</h3>
+              <p>
+                Hãy upload một file PDF có sẵn hoặc tạo CV mới từ template để bắt đầu quản lý CV thật của bạn.
+              </p>
+            </div>
+          )}
+        </main>
+      </section>
+
+      {previewResume ? <ResumePreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} onDownload={handleDownload} /> : null}
     </div>
-  );
-}
-
-function PreviewModal({ resume, onClose }) {
-  const structured = resume.structured_json || {};
-
-  return (
-    <div className="rw-modal-backdrop">
-      <div className="rw-preview-modal">
-        <div className="rw-modal-head">
-          <div>
-            <p style={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.2em", color: "#1d4ed8" }}>Preview</p>
-            <h3 className="rw-heading-2xl">{resume.title}</h3>
-            <p style={{ marginTop: "0.25rem", fontSize: "0.875rem", color: "#64748b" }}>Mẫu: {resume.template_name || "Chưa chọn"}</p>
-          </div>
-          <button type="button" className="rw-btn-close" onClick={onClose}>Đóng</button>
-        </div>
-
-        <div className="rw-modal-body">
-          <PreviewSection title="Thông tin cơ bản">
-            <p><strong>Họ tên:</strong> {structured.full_name || "Chưa cập nhật"}</p>
-            <p><strong>Headline:</strong> {structured.headline || "Chưa cập nhật"}</p>
-          </PreviewSection>
-          <PreviewSection title="Summary" content={structured.summary} />
-          <PreviewSection title="Skills" content={structured.skills} />
-          <PreviewSection title="Experience" content={structured.experience} />
-          <PreviewSection title="Education" content={structured.education} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PreviewSection({ title, children, content }) {
-  return (
-    <section className="rw-preview-section">
-      <h4 style={{ fontSize: "1rem", fontWeight: 600, color: "#0f172a" }}>{title}</h4>
-      <div className="rw-pre-wrap" style={{ marginTop: "0.75rem", fontSize: "0.875rem", lineHeight: "1.75rem", color: "#475569" }}>{children || content || "Chưa có nội dung"}</div>
-    </section>
   );
 }

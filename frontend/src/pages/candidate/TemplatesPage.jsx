@@ -1,5 +1,6 @@
-import ResumeWorkspacePage from "./ResumeWorkspacePage";
+﻿import { Navigate } from "react-router-dom";
+import { ROUTES } from "../../routes";
 
 export default function TemplatesPage() {
-  return <ResumeWorkspacePage defaultTab="templates" />;
+  return <Navigate to={ROUTES.candidate.resumeCreate} replace />;
 }

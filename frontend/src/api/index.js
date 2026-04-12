@@ -50,25 +50,32 @@ export const api = {
       }),
   },
   jobs: {
-    list: (params = "") => apiRequest(`/jobs${params}`),
+    list: (params = "") => apiRequest(`/jobs${params}`, { auth: false }),
     mine: (params = "") => apiRequest(`/jobs/mine${params}`),
-    detail: (id) => apiRequest(`/jobs/${id}`),
+    detail: (id) => apiRequest(`/jobs/${id}`, { auth: false }),
+    screen: (id) => apiRequest(`/jobs/${id}/screen`),
     create: (payload) => apiRequest("/jobs", { method: "POST", body: JSON.stringify(payload) }),
     update: (id, payload) => apiRequest(`/jobs/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
     delete: (id) => apiRequest(`/jobs/${id}`, { method: "DELETE" }),
   },
   tags: {
-    list: (params = "") => apiRequest(`/tags${params}`),
-    categories: () => apiRequest("/tags/categories"),
+    list: (params = "") => apiRequest(`/tags${params}`, { auth: false }),
+    categories: () => apiRequest("/tags/categories", { auth: false }),
   },
   statistics: {
-    landing: () => apiRequest("/statistics/landing"),
+    landing: () => apiRequest("/statistics/landing", { auth: false }),
   },
   resumes: {
     list: () => apiRequest("/resumes"),
+    templates: () => apiRequest("/resumes/templates", { auth: false }),
     detail: (id) => apiRequest(`/resumes/${id}`),
     createManual: (payload) =>
       apiRequest("/resumes/manual", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    createFromTemplate: (payload) =>
+      apiRequest("/resumes/from-template", {
         method: "POST",
         body: JSON.stringify(payload),
       }),
@@ -91,7 +98,7 @@ export const api = {
   },
   companies: {
     me: () => apiRequest("/companies/me"),
-    featured: () => apiRequest("/companies/featured"),
+    featured: () => apiRequest("/companies/featured", { auth: false }),
     updateMe: (payload) =>
       apiRequest("/companies/me", {
         method: "PUT",

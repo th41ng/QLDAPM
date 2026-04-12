@@ -1,4 +1,4 @@
-export const ROUTES = {
+﻿export const ROUTES = {
   home: "/",
   auth: "/auth",
   jobs: "/jobs",
@@ -6,6 +6,7 @@ export const ROUTES = {
   candidate: {
     profile: "/candidate/profile",
     resumes: "/candidate/resumes",
+    resumeCreate: "/candidate/resumes/create",
     templates: "/candidate/templates",
     applications: "/candidate/applications",
     employers: "/candidate/employers",
@@ -13,6 +14,9 @@ export const ROUTES = {
   recruiter: {
     dashboard: "/recruiter/dashboard",
     jobs: "/recruiter/jobs",
+    jobCreate: "/recruiter/jobs/new",
+    jobEdit: (id = ":id") => `/recruiter/jobs/${id}/edit`,
+    screening: "/recruiter/cv-screening",
     applications: "/recruiter/applications",
     company: "/recruiter/company",
     profile: "/recruiter/profile",
@@ -40,11 +44,14 @@ export const ROLE_NAV = {
   candidate: [
     { label: "Hồ sơ", to: ROUTES.candidate.profile },
     { label: "CV của tôi", to: ROUTES.candidate.resumes },
-    { label: "Mẫu CV", to: ROUTES.candidate.templates },
+    { label: "Tạo CV", to: ROUTES.candidate.resumeCreate },
+    { label: "Ứng tuyển", to: ROUTES.candidate.applications },
+    { label: "Nhà tuyển dụng", to: ROUTES.candidate.employers },
   ],
   recruiter: [
     { label: "Dashboard", to: ROUTES.recruiter.dashboard },
     { label: "Tin tuyển dụng", to: ROUTES.recruiter.jobs },
+    { label: "Sàng lọc CV", to: ROUTES.recruiter.screening },
     { label: "Ứng viên", to: ROUTES.recruiter.applications },
     { label: "Công ty", to: ROUTES.recruiter.company },
   ],

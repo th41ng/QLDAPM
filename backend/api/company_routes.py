@@ -15,7 +15,7 @@ api_companies_bp = Blueprint("api_companies", __name__)
 @jwt_required()
 @role_required("recruiter", "admin")
 def get_company():
-    user = get_user_by_id(get_jwt_identity())
+    user = get_user_by_id(int(get_jwt_identity()))
     company = get_company_by_user_id(user.id)
     return json_ok(company_to_dict(company))
 
@@ -25,7 +25,7 @@ def get_company():
 @jwt_required()
 @role_required("recruiter", "admin")
 def update_company():
-    user = get_user_by_id(get_jwt_identity())
+    user = get_user_by_id(int(get_jwt_identity()))
     data = request.get_json(force=True) if request.is_json else request.form.to_dict(flat=True)
     company = get_company_by_user_id(user.id)
     if not company:

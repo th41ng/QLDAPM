@@ -10,16 +10,36 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (token && !user) {
-      api.auth.me()
-        .then((data) => setUser(data))
-        .catch(() => {
-          clearAuthSession();
-          setUser(null);
-          setToken(null);
-        });
+    let mounted = true;
+
+    if (!token) {
+      clearAuthSession();
+      if (mounted) {
+        setUser(null);
+        setToken(null);
+      }
+      return () => {
+        mounted = false;
+      };
     }
-  }, [token, user]);
+
+    api.auth.me()
+      .then((data) => {
+        if (!mounted) return;
+        setUser(data);
+        setAuthSession(token, data);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        clearAuthSession();
+        setUser(null);
+        setToken(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [token]);
 
   const loginWithPassword = async (email, password) => {
     const data = await api.auth.loginPassword(email, password);

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api";
 import { ROUTES } from "../../routes";
+import CandidateApplicationsPage from "./ApplicationsPage";
 
 const PROFILE_TABS = [
   { value: "profile", label: "Hồ sơ" },
@@ -425,53 +426,7 @@ export default function CandidateProfilePage() {
             </aside>
           </div>
         ) : (
-          <div className="candidate-applications-panel">
-            <div className="candidate-panel-head">
-              <div>
-                <h2>Việc đã ứng tuyển</h2>
-                <p>Theo dõi trạng thái các hồ sơ đã nộp gần đây.</p>
-              </div>
-              <Link className="candidate-panel-link" to={ROUTES.jobs}>
-                Xem việc làm
-              </Link>
-            </div>
-
-            {loading ? (
-              <div className="candidate-empty-state">Đang tải danh sách ứng tuyển...</div>
-            ) : applications.length ? (
-              <div className="candidate-application-list">
-                {applications.map((application) => (
-                  <article key={application.id} className="candidate-application-card">
-                    <div className="candidate-application-main">
-                      <div className="candidate-application-title">
-                        <div>
-                          <h3>{application.job?.title || "Tin tuyển dụng"}</h3>
-                          <p>{application.job?.company?.company_name || "Nhà tuyển dụng"}</p>
-                        </div>
-                        <StatusBadge status={application.status} />
-                      </div>
-                      <div className="candidate-application-meta">
-                        <span>{application.job?.location || "Chưa cập nhật địa điểm"}</span>
-                        <span>{formatDate(application.applied_at)}</span>
-                        <span>{application.resume?.title || "CV online"}</span>
-                      </div>
-                    </div>
-                    <Link className="icon-btn" to={`/jobs/${application.job_id}`}>
-                      Xem chi tiết
-                    </Link>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="candidate-empty-state candidate-empty-state--large">
-                <strong>Bạn chưa có hồ sơ ứng tuyển nào</strong>
-                <p>Hãy khám phá các tin tuyển dụng phù hợp và nộp hồ sơ ngay hôm nay.</p>
-                <Link className="btn btn-small" to={ROUTES.jobs}>
-                  Khám phá việc làm
-                </Link>
-              </div>
-            )}
-          </div>
+          <CandidateApplicationsPage />
         )}
       </article>
 

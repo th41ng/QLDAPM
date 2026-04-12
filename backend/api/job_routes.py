@@ -16,7 +16,7 @@ from ..repositories import (
     list_screenable_resumes,
 )
 from ..services.matching_service import store_match_score
-from ..schemas import application_to_dict, job_to_dict
+from ..schemas import application_to_dict, job_to_dict, tag_to_dict
 
 api_jobs_bp = Blueprint("api_jobs", __name__)
 
@@ -31,7 +31,7 @@ def list_jobs():
 @jwt_required()
 @role_required("recruiter", "admin")
 def list_my_jobs():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = get_user_by_id(user_id)
     status = request.args.get("status") or None
     jobs = list_jobs_for_recruiter(None if user.role == "admin" else user_id, status=status)
@@ -50,7 +50,7 @@ def job_detail(job_id):
 @jwt_required()
 @role_required("recruiter")
 def create_job():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json(force=True)
     company = get_user_by_id(user_id).company
     if not company:
@@ -71,7 +71,7 @@ def update_job(job_id):
     job = get_job_by_id(job_id)
     if not job:
         return json_error("Job not found.", 404)
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     if job.recruiter_user_id != user_id and get_user_by_id(user_id).role != "admin":
         return json_error("Forbidden", 403)
     data = request.get_json(force=True)
@@ -98,7 +98,7 @@ def delete_job(job_id):
     job = get_job_by_id(job_id)
     if not job:
         return json_error("Job not found.", 404)
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     if job.recruiter_user_id != user_id and get_user_by_id(user_id).role != "admin":
         return json_error("Forbidden", 403)
     db.session.delete(job)
@@ -113,7 +113,7 @@ def job_applications(job_id):
     job = get_job_by_id(job_id)
     if not job:
         return json_error("Job not found.", 404)
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     if job.recruiter_user_id != user_id and get_user_by_id(user_id).role != "admin":
         return json_error("Forbidden", 403)
     apps = list_job_applications(job.id)
@@ -127,7 +127,7 @@ def screen_job(job_id):
     job = get_job_by_id(job_id)
     if not job:
         return json_error("Job not found.", 404)
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     if job.recruiter_user_id != user_id and get_user_by_id(user_id).role != "admin":
         return json_error("Forbidden", 403)
     resumes = list_screenable_resumes()
@@ -141,6 +141,15 @@ def screen_job(job_id):
                 "user_id": resume.user_id,
                 "title": resume.title,
                 "candidate_name": resume.user.full_name if resume.user else None,
+                "source_type": resume.source_type,
+                "template_name": resume.template_name,
+                "original_filename": resume.original_filename,
+                "file_ext": resume.file_ext,
+                "mime_type": resume.mime_type,
+                "created_at": resume.created_at.isoformat() if resume.created_at else None,
+                "updated_at": resume.updated_at.isoformat() if resume.updated_at else None,
+                "structured_json": resume.structured_json,
+                "tags": [tag_to_dict(tag) for tag in resume.tags],
             },
             "score": record.score,
             "breakdown": record.breakdown_json,

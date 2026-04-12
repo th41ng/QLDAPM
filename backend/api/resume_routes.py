@@ -1,12 +1,15 @@
 import json
 from pathlib import Path
+from datetime import date
 
 from flask import Blueprint, current_app, request, send_file
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from . import json_error, json_ok, role_required
 from ..core.extensions import db
-from ..models import CandidateProfile, Resume, Tag
+from ..models import CandidateProfile, CvTemplate, Resume, Tag
+from ..repositories import get_profile_by_user_id, get_resume_by_id, get_user_by_id, list_resumes_by_user_id
+from ..schemas import cv_template_to_dict, resume_to_dict
 from ..services.cv_service import (
     allowed_resume_file,
     extract_text_from_upload,
@@ -14,14 +17,87 @@ from ..services.cv_service import (
     generate_pdf_from_resume,
     save_uploaded_file,
 )
-from ..repositories import get_profile_by_user_id, get_resume_by_id, get_user_by_id, list_resumes_by_user_id
-from ..schemas import resume_to_dict
 
 api_resumes_bp = Blueprint("api_resumes", __name__)
 
 
 def _current_user():
-    return get_user_by_id(get_jwt_identity())
+    return get_user_by_id(int(get_jwt_identity()))
+
+
+def _structured_resume_payload(data: dict, user, template: CvTemplate | None = None):
+    return {
+        "full_name": data.get("full_name") or user.full_name,
+        "email": data.get("email") or user.email,
+        "phone": data.get("phone") or user.phone,
+        "dob": data.get("dob"),
+        "gender": data.get("gender"),
+        "address": data.get("address"),
+        "headline": data.get("headline") or (template.summary if template else None),
+        "summary": data.get("summary"),
+        "current_title": data.get("current_title"),
+        "years_experience": int(data.get("years_experience") or 0),
+        "expected_salary": data.get("expected_salary"),
+        "desired_location": data.get("desired_location"),
+        "education": data.get("education"),
+        "experience": data.get("experience"),
+        "skills": data.get("skills"),
+        "template": {
+            "id": template.id if template else data.get("template_id"),
+            "name": template.name if template else data.get("template_name"),
+            "slug": template.slug if template else data.get("template_slug"),
+            "preview_url": template.preview_url if template else data.get("template_preview_url"),
+        },
+    }
+
+
+def _sync_candidate_profile(user, data: dict, structured: dict | None = None):
+    profile = get_profile_by_user_id(user.id)
+    if not profile:
+        profile = CandidateProfile(user_id=user.id)
+        db.session.add(profile)
+
+    user.phone = data.get("phone") or user.phone
+    if structured is None:
+        structured = data
+
+    profile.headline = structured.get("headline") or profile.headline
+    profile.summary = structured.get("summary") or profile.summary
+    profile.current_title = structured.get("current_title") or profile.current_title
+    dob_value = structured.get("dob")
+    if dob_value:
+        profile.dob = date.fromisoformat(dob_value) if isinstance(dob_value, str) else dob_value
+    profile.gender = structured.get("gender") or profile.gender
+    profile.education = structured.get("education") or profile.education
+    profile.experience = structured.get("experience") or profile.experience
+    profile.address = structured.get("address") or profile.address
+    profile.desired_location = structured.get("desired_location") or profile.desired_location
+    years_experience = structured.get("years_experience", profile.years_experience or 0)
+    try:
+        profile.years_experience = int(years_experience or 0)
+    except (TypeError, ValueError):
+        profile.years_experience = profile.years_experience or 0
+    profile.expected_salary = structured.get("expected_salary") or profile.expected_salary
+    return profile
+
+
+def _render_resume_files(resume: Resume):
+    structured = resume.structured_json or {}
+    render_data = {
+        "full_name": structured.get("full_name") or resume.user.full_name,
+        "headline": structured.get("headline") or "",
+        "summary": structured.get("summary") or "",
+        "skills": structured.get("skills") or "",
+        "experience": structured.get("experience") or "",
+        "education": structured.get("education") or "",
+    }
+    upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
+    pdf_path = upload_dir / f"resume-{resume.id}.pdf"
+    docx_path = upload_dir / f"resume-{resume.id}.docx"
+    generate_pdf_from_resume(render_data, str(pdf_path))
+    generate_docx_from_resume(render_data, str(docx_path))
+    resume.generated_pdf_path = str(pdf_path)
+    resume.generated_docx_path = str(docx_path)
 
 
 @api_resumes_bp.get("")
@@ -33,28 +109,26 @@ def list_resumes():
     return json_ok([resume_to_dict(resume) for resume in resumes])
 
 
+@api_resumes_bp.get("/templates")
+def list_resume_templates():
+    templates = CvTemplate.query.filter(CvTemplate.is_active.is_(True)).order_by(CvTemplate.created_at.desc()).all()
+    return json_ok([cv_template_to_dict(template) for template in templates])
+
+
 @api_resumes_bp.post("/manual")
 @jwt_required()
 @role_required("candidate")
 def create_manual_resume():
     user = _current_user()
     data = request.get_json(force=True)
+    structured_json = _structured_resume_payload(data, user)
     resume = Resume(
         user_id=user.id,
         title=data.get("title") or f"CV của {user.full_name}",
         source_type="manual",
-        template_name=data.get("template_name"),
+        template_name=data.get("template_name") or data.get("template_slug"),
         raw_text=json.dumps(data, ensure_ascii=False),
-        structured_json={
-            "full_name": data.get("full_name"),
-            "headline": data.get("headline"),
-            "summary": data.get("summary"),
-            "skills": data.get("skills"),
-            "experience": data.get("experience"),
-            "education": data.get("education"),
-            "desired_location": data.get("desired_location"),
-            "years_experience": data.get("years_experience", 0),
-        },
+        structured_json=structured_json,
         is_primary=bool(data.get("is_primary", False)),
     )
     if resume.is_primary:
@@ -64,18 +138,47 @@ def create_manual_resume():
     tag_ids = data.get("tag_ids", [])
     if tag_ids:
         resume.tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
-    profile = get_profile_by_user_id(user.id)
-    if not profile:
-        profile = CandidateProfile(user_id=user.id)
-        db.session.add(profile)
-    profile.headline = data.get("headline") or profile.headline
-    profile.summary = data.get("summary") or profile.summary
-    profile.education = data.get("education") or profile.education
-    profile.experience = data.get("experience") or profile.experience
-    profile.desired_location = data.get("desired_location") or profile.desired_location
-    profile.years_experience = data.get("years_experience", profile.years_experience or 0)
+    _sync_candidate_profile(user, data, structured_json)
+    _render_resume_files(resume)
     db.session.commit()
     return json_ok(resume_to_dict(resume), "Resume created", 201)
+
+
+@api_resumes_bp.post("/from-template")
+@jwt_required()
+@role_required("candidate")
+def create_resume_from_template():
+    user = _current_user()
+    data = request.get_json(force=True)
+    template = None
+    if data.get("template_id"):
+        template = CvTemplate.query.filter_by(id=data.get("template_id"), is_active=True).first()
+    elif data.get("template_slug"):
+        template = CvTemplate.query.filter_by(slug=data.get("template_slug"), is_active=True).first()
+    if not template:
+        return json_error("Template not found.", 404)
+
+    structured_json = _structured_resume_payload(data, user, template)
+    resume = Resume(
+        user_id=user.id,
+        title=data.get("title") or f"{template.name} - {user.full_name}",
+        source_type="manual",
+        template_name=template.name,
+        raw_text=json.dumps(data, ensure_ascii=False),
+        structured_json=structured_json,
+        is_primary=bool(data.get("is_primary", False)),
+    )
+    if resume.is_primary:
+        Resume.query.filter_by(user_id=user.id, is_primary=True).update({"is_primary": False})
+    db.session.add(resume)
+    db.session.flush()
+    tag_ids = data.get("tag_ids", [])
+    if tag_ids:
+        resume.tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
+    _sync_candidate_profile(user, data, structured_json)
+    _render_resume_files(resume)
+    db.session.commit()
+    return json_ok(resume_to_dict(resume), "Resume created from template", 201)
 
 
 @api_resumes_bp.post("/upload")
@@ -149,15 +252,9 @@ def update_resume(resume_id):
         resume.is_primary = True
     if "tag_ids" in data:
         resume.tags = Tag.query.filter(Tag.id.in_(data["tag_ids"])).all()
-    profile = get_profile_by_user_id(user.id)
-    if profile and data.get("structured_json"):
-        structured = data["structured_json"]
-        profile.headline = structured.get("headline") or profile.headline
-        profile.summary = structured.get("summary") or profile.summary
-        profile.education = structured.get("education") or profile.education
-        profile.experience = structured.get("experience") or profile.experience
-        profile.desired_location = structured.get("desired_location") or profile.desired_location
-        profile.years_experience = structured.get("years_experience", profile.years_experience or 0)
+    if data.get("structured_json"):
+        _sync_candidate_profile(user, data["structured_json"], data["structured_json"])
+        _render_resume_files(resume)
     db.session.commit()
     return json_ok(resume_to_dict(resume), "Resume updated")
 
@@ -187,7 +284,7 @@ def export_resume(resume_id):
         return json_error("Forbidden", 403)
     fmt = request.args.get("format", "pdf").lower()
     data = {
-        "full_name": resume.user.full_name,
+        "full_name": (resume.structured_json or {}).get("full_name") or resume.user.full_name,
         "headline": (resume.structured_json or {}).get("headline", ""),
         "summary": (resume.structured_json or {}).get("summary", ""),
         "skills": (resume.structured_json or {}).get("skills", ""),
@@ -196,10 +293,14 @@ def export_resume(resume_id):
     }
     upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
     if fmt == "docx":
-        path = upload_dir / f"resume-{resume.id}.docx"
+        path = Path(resume.generated_docx_path) if resume.generated_docx_path else upload_dir / f"resume-{resume.id}.docx"
+        if not path.exists() or upload_dir not in path.parents:
+            path = upload_dir / f"resume-{resume.id}.docx"
         generate_docx_from_resume(data, str(path))
         return send_file(path, as_attachment=True, download_name=path.name)
-    path = upload_dir / f"resume-{resume.id}.pdf"
+    path = Path(resume.generated_pdf_path) if resume.generated_pdf_path else upload_dir / f"resume-{resume.id}.pdf"
+    if not path.exists() or upload_dir not in path.parents:
+        path = upload_dir / f"resume-{resume.id}.pdf"
     generate_pdf_from_resume(data, str(path))
     return send_file(path, as_attachment=True, download_name=path.name)
 

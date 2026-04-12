@@ -167,6 +167,88 @@ CREATE TABLE cv_templates (
   INDEX idx_cv_templates_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+INSERT INTO cv_templates (
+  id, name, slug, summary, description, thumbnail_url, preview_url, file_format, is_active
+)
+VALUES
+  (
+    1,
+    'Modern Blue',
+    'modern-blue',
+    'Mẫu CV hiện đại cho ứng viên công nghệ',
+    'Bố cục hiện đại, phù hợp cho lập trình viên, product và tech role.',
+    NULL,
+    'https://res.cloudinary.com/dqukehyry/image/upload/v1775393343/nguyen-thi-truc-mai_4010758_561084a9cd7112f2_4010758_orgnyz.pdf',
+    'pdf',
+    1
+  ),
+  (
+    2,
+    'ATS Clean',
+    'ats-clean',
+    'Thiết kế tối giản tối ưu cho hệ thống ATS',
+    'Mẫu CV gọn, sạch, ưu tiên khả năng đọc máy và phỏng vấn nhanh.',
+    NULL,
+    'https://res.cloudinary.com/dqukehyry/image/upload/v1775393343/nguyen-thi-truc-mai_4010756_Joboko_4fd074991dc96370_4010756_rgglu9.pdf',
+    'pdf',
+    1
+  ),
+  (
+    3,
+    'Creative Minimal',
+    'creative-minimal',
+    'Mẫu CV sáng tạo cho thiết kế và marketing',
+    'Thích hợp cho ứng viên thiên về sáng tạo nhưng vẫn giữ bố cục rõ ràng.',
+    NULL,
+    'https://res.cloudinary.com/dqukehyry/image/upload/v1775393344/nguyen-thi-truc-mai_4010752_Joboko_84c60ffaca3a6456_4010752_ag2sng.pdf',
+    'pdf',
+    1
+  ),
+  (
+    4,
+    'Product Designer',
+    'product-designer',
+    'Phù hợp cho UI/UX và product designer',
+    'Tập trung vào portfolio, case study và trải nghiệm sản phẩm.',
+    NULL,
+    'https://res.cloudinary.com/dqukehyry/image/upload/v1775393344/nguyen-thi-truc-mai_4010753_Joboko_881080294f84b32f_4010753_ptymya.pdf',
+    'pdf',
+    1
+  ),
+  (
+    5,
+    'Data Analyst',
+    'data-analyst',
+    'Tập trung vào dữ liệu, bảng biểu và KPI',
+    'Dành cho ứng viên phân tích dữ liệu, reporting và insight-driven work.',
+    NULL,
+    'https://res.cloudinary.com/dqukehyry/image/upload/v1775393344/nguyen-thi-truc-mai_4010748_Joboko_8250e56278eb8bea_4010748_g1muvd.pdf',
+    'pdf',
+    1
+  ),
+  (
+    6,
+    'HR Executive',
+    'hr-executive',
+    'Mẫu CV cho nhân sự và tuyển dụng',
+    'Phù hợp cho HR, tuyển dụng và các vị trí quản trị nhân sự.',
+    NULL,
+    'https://res.cloudinary.com/dqukehyry/image/upload/v1775393344/nguyen-thi-truc-mai_4010751_Joboko_b88f4eb6aec594f1_4010751_enmjel.pdf',
+    'pdf',
+    1
+  ),
+  (
+    7,
+    'Marketing Pro',
+    'marketing-pro',
+    'Mẫu CV cho digital marketing và content',
+    'Tập trung vào chiến dịch, nội dung và hiệu quả tăng trưởng.',
+    NULL,
+    'https://res.cloudinary.com/dqukehyry/image/upload/v1775393345/tien-dinh-bich_4010744_Joboko_cab46210c308a2a6_4010744_gbarcg.pdf',
+    'pdf',
+    1
+  );
+
 CREATE TABLE job_tags (
   job_id INT NOT NULL,
   tag_id INT NOT NULL,

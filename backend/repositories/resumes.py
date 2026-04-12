@@ -17,4 +17,11 @@ def get_resume_by_id(resume_id):
 
 
 def list_screenable_resumes():
-    return Resume.query.filter(Resume.source_type.in_(["manual", "upload", "generated"])).all()
+    return (
+        Resume.query.options(
+            selectinload(Resume.tags),
+            selectinload(Resume.user),
+        )
+        .filter(Resume.source_type.in_(["manual", "upload", "generated"]))
+        .all()
+    )

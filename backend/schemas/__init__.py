@@ -1,5 +1,6 @@
 from .serializers import (
     application_to_dict,
+    cv_template_to_dict,
     company_to_dict,
     category_to_dict,
     job_to_dict,
@@ -10,6 +11,7 @@ from .serializers import (
 
 __all__ = [
     "application_to_dict",
+    "cv_template_to_dict",
     "company_to_dict",
     "category_to_dict",
     "job_to_dict",

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api";
 import EmployerCard from "../../components/employers/EmployerCard";
 import EmployerSearchHero from "../../components/employers/EmployerSearchHero";
 import EmployerSection from "../../components/employers/EmployerSection";
-import { EMPLOYER_QUICK_FILTERS, MOCK_EMPLOYERS } from "../../data/employerDiscovery";
+import { EMPLOYER_QUICK_FILTERS } from "../../data/employerDiscovery";
 import { ROUTES } from "../../routes";
 
 const FOLLOWED_KEY = "candidate_followed_employers";
@@ -48,10 +48,7 @@ export default function EmployersPage() {
     localStorage.setItem(RECENT_KEY, JSON.stringify(recentIds));
   }, [recentIds]);
 
-  const employerPool = useMemo(() => {
-    const enriched = enrichCompanies(featuredCompanies, jobs);
-    return enriched.length ? enriched : MOCK_EMPLOYERS;
-  }, [featuredCompanies, jobs]);
+  const employerPool = useMemo(() => enrichCompanies(featuredCompanies, jobs), [featuredCompanies, jobs]);
 
   const filteredCompanies = useMemo(() => {
     const keyword = normalize(query);
@@ -114,7 +111,7 @@ export default function EmployersPage() {
         description="Doanh nghiệp được ưu tiên theo mức độ phù hợp, công nghệ liên quan và mức độ tuyển dụng hiện tại."
         action={<Link className="text-link" style={{ fontSize: "0.875rem", fontWeight: 600 }} to={ROUTES.jobs}>Xem tất cả việc làm</Link>}
       >
-        {loading ? <EmptyState message="Đang phân tích dữ liệu công ty phù hợp..." /> : null}
+        {loading ? <EmptyState message="Đang phân tích dữ liệu công ty từ database..." /> : null}
         {!loading && recommendedCompanies.length ? (
           <div className="landing-employer-grid">
             {recommendedCompanies.map((company) => (
@@ -136,17 +133,21 @@ export default function EmployersPage() {
         title="Nhà tuyển dụng nổi bật"
         description="Giữ lại tinh thần section cũ, nhưng ưu tiên thông tin scan nhanh để ứng viên đánh giá công ty thay vì chỉ xem giới thiệu chung."
       >
-        <div className="landing-employer-grid">
-          {featuredSectionCompanies.map((company) => (
-            <EmployerCard
-              key={`featured-${company.id}`}
-              company={company}
-              followed={followedIds.includes(company.id)}
-              onToggleFollow={handleToggleFollow}
-              onViewCompany={handleViewCompany}
-            />
-          ))}
-        </div>
+        {!loading && featuredSectionCompanies.length ? (
+          <div className="landing-employer-grid">
+            {featuredSectionCompanies.map((company) => (
+              <EmployerCard
+                key={`featured-${company.id}`}
+                company={company}
+                followed={followedIds.includes(company.id)}
+                onToggleFollow={handleToggleFollow}
+                onViewCompany={handleViewCompany}
+              />
+            ))}
+          </div>
+        ) : !loading ? (
+          <EmptyState message="Chưa có nhà tuyển dụng nổi bật từ database." />
+        ) : null}
       </EmployerSection>
 
       <EmployerSection
@@ -226,7 +227,6 @@ function buildIndustries(companies) {
 }
 
 function enrichCompanies(companies, jobs) {
-  const fallbackByName = new Map(MOCK_EMPLOYERS.map((company) => [normalize(company.company_name), company]));
   const jobsByCompany = new Map();
 
   jobs.forEach((job) => {
@@ -241,30 +241,28 @@ function enrichCompanies(companies, jobs) {
   return companies.map((company, index) => {
     const key = normalize(company.company_name);
     const jobList = jobsByCompany.get(key) || [];
-    const fallback = fallbackByName.get(key);
     const tags = [...new Set(jobList.flatMap((job) => (job.tags || []).map((tag) => tag.name)).filter(Boolean))].slice(0, 4);
     const locations = [...new Set(jobList.map((job) => job.location).filter(Boolean))];
     const hasRemote = jobList.some((job) => normalize(job.workplace_type).includes("remote"));
     const hasFresher = jobList.some((job) => ["intern", "fresher", "junior"].includes(job.experience_level));
 
     return {
-      ...fallback,
       ...company,
-      id: company.id || fallback?.id || index + 1,
-      company_name: company.company_name || fallback?.company_name || "Nhà tuyển dụng",
-      industry: company.industry || fallback?.industry || deriveIndustry(tags),
-      location: locations[0] || company.address || fallback?.location || fallback?.address || "TP. Hồ Chí Minh",
-      address: company.address || fallback?.address || locations[0] || "TP. Hồ Chí Minh",
-      openings: Number(company.openings || jobList.length || fallback?.openings || 0),
-      tags: tags.length ? tags : fallback?.tags || [],
-      rating: fallback?.rating || 4.3 + ((index % 6) * 0.1),
-      size: fallback?.size || deriveSize(index),
-      badge: company.badge || fallback?.badge || (Number(company.openings || 0) >= 5 ? "Top Employer" : "Đang tuyển"),
-      match_score: fallback?.match_score || 78 + ((index * 7) % 18),
-      hiring_focus: fallback?.hiring_focus || compact([hasRemote ? "Remote" : null, hasFresher ? "Fresher" : null, company.industry ? "Đúng ngành" : null]),
-      summary: fallback?.summary || `Công ty đang có ${Number(company.openings || jobList.length || 0)} vị trí mở và phù hợp để ứng viên khám phá thêm trước khi ứng tuyển.`,
-      website: company.website || fallback?.website || "",
-      logo_url: company.logo_url || fallback?.logo_url || "",
+      id: company.id || index + 1,
+      company_name: company.company_name || "Nhà tuyển dụng",
+      industry: company.industry || deriveIndustry(tags),
+      location: locations[0] || company.address || "TP. Hồ Chí Minh",
+      address: company.address || locations[0] || "TP. Hồ Chí Minh",
+      openings: Number(company.openings || jobList.length || 0),
+      tags: tags.length ? tags : [],
+      rating: Number(company.rating || 4.3 + ((index % 6) * 0.1)).toFixed(1),
+      size: company.size || deriveSize(index),
+      badge: company.badge || (Number(company.openings || 0) >= 5 ? "Top Employer" : "Đang tuyển"),
+      match_score: company.match_score || 78 + ((index * 7) % 18),
+      hiring_focus: compact([hasRemote ? "Remote" : null, hasFresher ? "Fresher" : null, company.industry ? "Đúng ngành" : null]),
+      summary: company.summary || `Công ty đang có ${Number(company.openings || jobList.length || 0)} vị trí mở và phù hợp để ứng viên khám phá thêm trước khi ứng tuyển.`,
+      website: company.website || "",
+      logo_url: company.logo_url || "",
     };
   });
 }
@@ -339,9 +337,5 @@ function readStoredIds(key) {
 }
 
 function EmptyState({ message }) {
-  return (
-    <div className="rw-resume-empty">
-      {message}
-    </div>
-  );
+  return <div className="rw-resume-empty">{message}</div>;
 }

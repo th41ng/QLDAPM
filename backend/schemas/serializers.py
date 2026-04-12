@@ -21,6 +21,21 @@ def tag_to_dict(tag):
     }
 
 
+def cv_template_to_dict(template):
+    return {
+        "id": template.id,
+        "name": template.name,
+        "slug": template.slug,
+        "summary": template.summary,
+        "description": template.description,
+        "thumbnail_url": template.thumbnail_url,
+        "preview_url": template.preview_url,
+        "file_format": template.file_format,
+        "is_active": template.is_active,
+        "created_at": template.created_at.isoformat() if template.created_at else None,
+    }
+
+
 def company_to_dict(company, openings=None):
     if not company:
         return None
