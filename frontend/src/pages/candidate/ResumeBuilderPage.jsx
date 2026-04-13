@@ -102,6 +102,7 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [step, setStep] = useState(1);
+  const [editorModalOpen, setEditorModalOpen] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState("");
 
   const editingResumeId = location.state?.resumeId || null;
@@ -146,10 +147,12 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
           setSelectedTemplate(templateFromResume || templateFromSlug || null);
           setForm(buildFormFromResume(userData, profileData, editingResume, templateFromResume || templateFromSlug || null));
           setStep(2);
+          setEditorModalOpen(true);
         } else if (templateFromSlug) {
           setSelectedTemplate(templateFromSlug);
           setForm(buildFormFromSources(userData, profileData, templateFromSlug, null));
           setStep(2);
+          setEditorModalOpen(true);
         } else {
           setSelectedTemplate(null);
           setForm(buildFormFromSources(userData, profileData, null, null));
@@ -187,6 +190,7 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
       title: current.id ? current.title : `${template.name} - CV mới`,
     }));
     setStep(2);
+    setEditorModalOpen(true);
     setMessage(`Đã chọn mẫu ${template.name}.`);
   };
 
@@ -219,11 +223,14 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
   };
 
   const handlePreview = () => {
+    setEditorModalOpen(true);
     setStep(3);
-    const element = document.getElementById("cv-live-preview");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    window.requestAnimationFrame(() => {
+      const element = document.getElementById("cv-live-preview");
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
   };
 
   const handleSubmit = async () => {
@@ -374,6 +381,16 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
               <div className="candidate-create-selected-actions">
                 <button
                   type="button"
+                  className="btn"
+                  onClick={() => {
+                    setStep(2);
+                    setEditorModalOpen(true);
+                  }}
+                >
+                  Mo trinh sua CV
+                </button>
+                <button
+                  type="button"
                   className="rw-btn-outline-lg"
                   onClick={() => {
                     setSelectedTemplate(null);
@@ -391,61 +408,68 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
               <p>Form sẽ được khóa theo template bạn chọn để giữ flow thật gọn và dễ theo dõi.</p>
             </section>
           )}
-
-          {selectedTemplate || form.id ? (
-            <section className="rw-card candidate-create-form-card">
-              <div className="rw-flex-between candidate-create-section-head">
-                <div>
-                  <h2 className="rw-heading-2xl">Bước 2. Điền form</h2>
-                  <p className="rw-muted-sm">Template đã được chọn. Giờ chỉ cần bổ sung dữ liệu cá nhân và nội dung CV.</p>
-                </div>
-                <span className="rw-badge rw-badge-blue">Template locked</span>
-              </div>
-
-              <ResumeForm
-                values={form}
-                templates={templates}
-                onChange={handleChange}
-                onSaveDraft={handleSaveDraft}
-                onPreview={handlePreview}
-                onSubmit={handleSubmit}
-                saving={busy}
-                editingTitle={form.id ? "Chỉnh sửa CV" : undefined}
-                lockTemplate
-                submitLabel={form.id ? "Cập nhật CV" : "Tạo CV"}
-              />
-            </section>
-          ) : null}
         </div>
-
-        <aside className="candidate-create-side" id="cv-live-preview">
-          <section className="rw-card candidate-create-preview-panel">
-            <div className="rw-flex-between candidate-create-section-head">
-              <div>
-                <h2 className="rw-heading-2xl">Bước 3. Xem trước CV thật</h2>
-                <p className="rw-muted-sm">Template được render trực tiếp từ React component và cập nhật theo form realtime.</p>
-              </div>
-              <span className="rw-badge rw-badge-green">Live CV</span>
-            </div>
-
-            <div className="candidate-create-preview-frame">
-              {previewTemplate ? (
-                <div className="candidate-live-template-wrap">
-                  <LiveTemplate data={form} />
-                </div>
-              ) : (
-                <div className="rw-empty-dashed">Chưa chọn template nên chưa có preview CV.</div>
-              )}
-            </div>
-
-            <button type="button" className="btn" style={{ width: "100%", marginTop: "1rem" }} onClick={handleSubmit} disabled={busy || !canSubmit}>
-              {busy ? "Đang tạo..." : form.id ? "Cập nhật CV ngay" : "Tạo CV ngay"}
-            </button>
-          </section>
-        </aside>
       </section>
 
       {draftSavedAt && activeTab === "create" ? <div className="rw-draft-hint">Nháp gần nhất: {draftSavedAt}</div> : null}
+
+      {editorModalOpen && (selectedTemplate || form.id || form.template_slug || form.template_name) ? (
+        <div className="rw-modal-backdrop">
+          <div className="rw-modal candidate-editor-modal">
+            <div className="rw-modal-head">
+              <div>
+                <p className="rw-modal-kicker">Buoc 2 + Buoc 3</p>
+                <h3 className="rw-heading-2xl">Chinh sua va xem truoc trong cung mot modal</h3>
+                <p className="rw-modal-subtitle">Mau: {selectedTemplate?.name || form.template_name || "Chua chon"}</p>
+              </div>
+              <button type="button" className="rw-btn-close" onClick={() => setEditorModalOpen(false)}>
+                Dong
+              </button>
+            </div>
+
+            <div className="rw-modal-body candidate-editor-modal-body">
+              <section className="candidate-editor-form-pane">
+                <ResumeForm
+                  values={form}
+                  templates={templates}
+                  onChange={handleChange}
+                  onSaveDraft={handleSaveDraft}
+                  onPreview={handlePreview}
+                  onSubmit={handleSubmit}
+                  saving={busy}
+                  editingTitle={form.id ? "Chỉnh sửa CV" : undefined}
+                  lockTemplate
+                  submitLabel={form.id ? "Cập nhật CV" : "Tạo CV"}
+                />
+              </section>
+
+              <section className="candidate-editor-preview-pane" id="cv-live-preview">
+                <div className="rw-flex-between candidate-create-section-head">
+                  <div>
+                    <h2 className="rw-heading-2xl">Xem truoc CV that</h2>
+                    <p className="rw-muted-sm">Noi dung thay doi realtime theo form ben trai.</p>
+                  </div>
+                  <span className="rw-badge rw-badge-green">Live CV</span>
+                </div>
+
+                <div className="candidate-create-preview-frame">
+                  {previewTemplate ? (
+                    <div className="candidate-live-template-wrap">
+                      <LiveTemplate data={form} />
+                    </div>
+                  ) : (
+                    <div className="rw-empty-dashed">Chưa chọn template nên chưa có preview CV.</div>
+                  )}
+                </div>
+
+                <button type="button" className="btn" style={{ width: "100%", marginTop: "1rem" }} onClick={handleSubmit} disabled={busy || !canSubmit}>
+                  {busy ? "Đang tạo..." : form.id ? "Cập nhật CV ngay" : "Tạo CV ngay"}
+                </button>
+              </section>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

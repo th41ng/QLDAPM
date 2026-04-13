@@ -3,7 +3,8 @@ const styles = `
 
   .cv-template--minimal-slate {
     font-family: 'Outfit', sans-serif;
-    max-width: 720px;
+    max-width: 794px;
+    min-height: 1123px;
     margin: 0 auto;
     padding: 3rem 3.5rem;
     font-size: 13px;
@@ -226,19 +227,17 @@ function text(value, fallback = "Chua cap nhat") {
 function splitLines(value) {
   if (Array.isArray(value)) return value.filter(Boolean).map(String);
   return String(value ?? "")
-    .split(/\n+|,/) 
+    .split(/\n+|,/)
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
-export default function MinimalSlateTemplate({ data }) {
+export default function MinimalSlateTemplate({ data = {} }) {
   const skills = splitLines(data.skills);
   const experiences = Array.isArray(data.experience_list)
     ? data.experience_list
     : null;
-  const projects = Array.isArray(data.project_list)
-    ? data.project_list
-    : null;
+  const projects = Array.isArray(data.project_list) ? data.project_list : null;
   const educations = Array.isArray(data.education_list)
     ? data.education_list
     : null;
@@ -253,10 +252,7 @@ export default function MinimalSlateTemplate({ data }) {
   return (
     <>
       <style>{styles}</style>
-      <article
-        className="cv-template cv-template--minimal-slate"
-        id="cv-preview"
-      >
+      <article className="cv-template cv-template--minimal-slate">
         <header className="cv-minimal-header">
           <h1>{text(data.full_name, "Ho va ten")}</h1>
           <p>{text(data.headline, "Vi tri ung tuyen")}</p>
@@ -295,8 +291,12 @@ export default function MinimalSlateTemplate({ data }) {
                   {idx > 0 && <hr className="cv-minimal-exp-divider" />}
                   <div className="cv-minimal-exp-item">
                     <div className="cv-minimal-exp-header">
-                      <span className="cv-minimal-exp-company">{exp.company}</span>
-                      <span className="cv-minimal-exp-period">{exp.period}</span>
+                      <span className="cv-minimal-exp-company">
+                        {exp.company}
+                      </span>
+                      <span className="cv-minimal-exp-period">
+                        {exp.period}
+                      </span>
                     </div>
                     <p className="cv-minimal-exp-role">{exp.role}</p>
                     {Array.isArray(exp.bullets) && exp.bullets.length > 0 && (

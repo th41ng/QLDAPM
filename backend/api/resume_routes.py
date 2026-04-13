@@ -4,6 +4,7 @@ from datetime import date
 
 from flask import Blueprint, current_app, request, send_file
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from sqlalchemy import func
 
 from . import json_error, json_ok, role_required
 from ..core.extensions import db
@@ -86,10 +87,23 @@ def _render_resume_files(resume: Resume):
     render_data = {
         "full_name": structured.get("full_name") or resume.user.full_name,
         "headline": structured.get("headline") or "",
+        "email": structured.get("email") or resume.user.email,
+        "phone": structured.get("phone") or resume.user.phone,
+        "address": structured.get("address") or "",
+        "dob": structured.get("dob") or "",
+        "gender": structured.get("gender") or "",
+        "current_title": structured.get("current_title") or "",
+        "years_experience": structured.get("years_experience") or 0,
+        "expected_salary": structured.get("expected_salary") or "",
+        "desired_location": structured.get("desired_location") or "",
         "summary": structured.get("summary") or "",
         "skills": structured.get("skills") or "",
         "experience": structured.get("experience") or "",
         "education": structured.get("education") or "",
+        "template": structured.get("template") or {
+            "name": resume.template_name,
+            "slug": (resume.template_name or "").lower().replace(" ", "-"),
+        },
     }
     upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
     pdf_path = upload_dir / f"resume-{resume.id}.pdf"
@@ -98,6 +112,13 @@ def _render_resume_files(resume: Resume):
     generate_docx_from_resume(render_data, str(docx_path))
     resume.generated_pdf_path = str(pdf_path)
     resume.generated_docx_path = str(docx_path)
+
+
+def _try_render_resume_files(resume: Resume):
+    try:
+        _render_resume_files(resume)
+    except Exception:
+        current_app.logger.exception("Failed to render resume files for resume_id=%s", resume.id)
 
 
 @api_resumes_bp.get("")
@@ -139,7 +160,8 @@ def create_manual_resume():
     if tag_ids:
         resume.tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
     _sync_candidate_profile(user, data, structured_json)
-    _render_resume_files(resume)
+    db.session.commit()
+    _try_render_resume_files(resume)
     db.session.commit()
     return json_ok(resume_to_dict(resume), "Resume created", 201)
 
@@ -151,10 +173,22 @@ def create_resume_from_template():
     user = _current_user()
     data = request.get_json(force=True)
     template = None
-    if data.get("template_id"):
-        template = CvTemplate.query.filter_by(id=data.get("template_id"), is_active=True).first()
-    elif data.get("template_slug"):
-        template = CvTemplate.query.filter_by(slug=data.get("template_slug"), is_active=True).first()
+    template_id = data.get("template_id")
+    template_slug = str(data.get("template_slug") or "").strip().lower()
+    template_name = str(data.get("template_name") or "").strip()
+
+    if template_id:
+        template = CvTemplate.query.filter_by(id=template_id, is_active=True).first()
+    if not template and template_slug:
+        template = CvTemplate.query.filter(
+            func.lower(CvTemplate.slug) == template_slug,
+            CvTemplate.is_active.is_(True),
+        ).first()
+    if not template and template_name:
+        template = CvTemplate.query.filter(
+            func.lower(CvTemplate.name) == template_name.lower(),
+            CvTemplate.is_active.is_(True),
+        ).first()
     if not template:
         return json_error("Template not found.", 404)
 
@@ -176,7 +210,8 @@ def create_resume_from_template():
     if tag_ids:
         resume.tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
     _sync_candidate_profile(user, data, structured_json)
-    _render_resume_files(resume)
+    db.session.commit()
+    _try_render_resume_files(resume)
     db.session.commit()
     return json_ok(resume_to_dict(resume), "Resume created from template", 201)
 
@@ -254,8 +289,10 @@ def update_resume(resume_id):
         resume.tags = Tag.query.filter(Tag.id.in_(data["tag_ids"])).all()
     if data.get("structured_json"):
         _sync_candidate_profile(user, data["structured_json"], data["structured_json"])
-        _render_resume_files(resume)
     db.session.commit()
+    if data.get("structured_json"):
+        _try_render_resume_files(resume)
+        db.session.commit()
     return json_ok(resume_to_dict(resume), "Resume updated")
 
 
@@ -283,26 +320,47 @@ def export_resume(resume_id):
     if user.role != "admin" and resume.user_id != user.id:
         return json_error("Forbidden", 403)
     fmt = request.args.get("format", "pdf").lower()
+    structured = resume.structured_json or {}
     data = {
-        "full_name": (resume.structured_json or {}).get("full_name") or resume.user.full_name,
-        "headline": (resume.structured_json or {}).get("headline", ""),
-        "summary": (resume.structured_json or {}).get("summary", ""),
-        "skills": (resume.structured_json or {}).get("skills", ""),
-        "experience": (resume.structured_json or {}).get("experience", ""),
-        "education": (resume.structured_json or {}).get("education", ""),
+        "full_name": structured.get("full_name") or resume.user.full_name,
+        "headline": structured.get("headline") or "",
+        "email": structured.get("email") or resume.user.email,
+        "phone": structured.get("phone") or resume.user.phone,
+        "address": structured.get("address") or "",
+        "dob": structured.get("dob") or "",
+        "gender": structured.get("gender") or "",
+        "current_title": structured.get("current_title") or "",
+        "years_experience": structured.get("years_experience") or 0,
+        "expected_salary": structured.get("expected_salary") or "",
+        "desired_location": structured.get("desired_location") or "",
+        "summary": structured.get("summary") or "",
+        "skills": structured.get("skills") or "",
+        "experience": structured.get("experience") or "",
+        "education": structured.get("education") or "",
+        "template": structured.get("template") or {
+            "name": resume.template_name,
+            "slug": (resume.template_name or "").lower().replace(" ", "-"),
+        },
     }
-    upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
-    if fmt == "docx":
-        path = Path(resume.generated_docx_path) if resume.generated_docx_path else upload_dir / f"resume-{resume.id}.docx"
+    upload_dir = Path(current_app.config["UPLOAD_FOLDER"]).resolve()
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        if fmt == "docx":
+            path = Path(resume.generated_docx_path).resolve() if resume.generated_docx_path else upload_dir / f"resume-{resume.id}.docx"
+            if not path.exists() or upload_dir not in path.parents:
+                path = upload_dir / f"resume-{resume.id}.docx"
+            generate_docx_from_resume(data, str(path))
+            return send_file(path, as_attachment=True, download_name=path.name)
+
+        path = Path(resume.generated_pdf_path).resolve() if resume.generated_pdf_path else upload_dir / f"resume-{resume.id}.pdf"
         if not path.exists() or upload_dir not in path.parents:
-            path = upload_dir / f"resume-{resume.id}.docx"
-        generate_docx_from_resume(data, str(path))
+            path = upload_dir / f"resume-{resume.id}.pdf"
+        generate_pdf_from_resume(data, str(path))
         return send_file(path, as_attachment=True, download_name=path.name)
-    path = Path(resume.generated_pdf_path) if resume.generated_pdf_path else upload_dir / f"resume-{resume.id}.pdf"
-    if not path.exists() or upload_dir not in path.parents:
-        path = upload_dir / f"resume-{resume.id}.pdf"
-    generate_pdf_from_resume(data, str(path))
-    return send_file(path, as_attachment=True, download_name=path.name)
+    except Exception:
+        current_app.logger.exception("Failed to export resume_id=%s with format=%s", resume.id, fmt)
+        return json_error("Không thể xuất file CV lúc này.", 500)
 
 
 @api_resumes_bp.get("/recommendations")

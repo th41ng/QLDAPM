@@ -6,6 +6,7 @@ import ResumePreviewModal from "../../components/resume/ResumePreviewModal";
 import ResumeStats from "../../components/resume/ResumeStats";
 import ResumeTabs from "../../components/resume/ResumeTabs";
 import ResumeUploadCard from "../../components/resume/ResumeUploadCard";
+import { resolveTemplateComponent } from "../../components/resume/templates";
 import { ROUTES } from "../../routes";
 
 const FILTERS = [
@@ -44,6 +45,36 @@ function buildAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function filenameFromContentDisposition(headerValue, fallback) {
+  if (!headerValue) return fallback;
+  const utfMatch = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utfMatch?.[1]) {
+    try {
+      return decodeURIComponent(utfMatch[1]);
+    } catch {
+      return fallback;
+    }
+  }
+  const plainMatch = headerValue.match(/filename="?([^";]+)"?/i);
+  return plainMatch?.[1] || fallback;
+}
+
+function toTemplateKey(resume) {
+  const structured = resume?.structured_json || {};
+  const template = structured.template || {};
+  return template.slug || template.name || resume?.template_name || "modern-blue";
+}
+
+function toSafeFilename(value, fallback = "resume") {
+  const source = String(value || fallback)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return source || fallback;
+}
+
 export default function ResumeWorkspacePage({ defaultTab = "list" }) {
   const navigate = useNavigate();
   const uploadButtonRef = useRef(null);
@@ -57,6 +88,8 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
   const [query, setQuery] = useState("");
   const [uploadFile, setUploadFile] = useState(null);
   const [previewResume, setPreviewResume] = useState(null);
+  const [exportResume, setExportResume] = useState(null);
+  const exportTemplateRef = useRef(null);
 
   useEffect(() => {
     setActiveTab(defaultTab);
@@ -111,7 +144,7 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
     return items;
   }, [resumes, filterMode, query, sortMode]);
 
-  const openExport = async (resumeId, format = "pdf", popup = null) => {
+  const openExport = async (resumeId, format = "pdf") => {
     const response = await fetch(api.resumes.exportUrl(resumeId, format), {
       headers: buildAuthHeaders(),
     });
@@ -122,21 +155,71 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
 
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
-    if (popup) {
-      popup.location.href = url;
-    } else {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
+    const fallbackName = `resume-${resumeId}.${format}`;
+    const downloadName = filenameFromContentDisposition(response.headers.get("content-disposition"), fallbackName);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = downloadName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
     window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
   };
 
+  const openTemplateExport = async (resume) => {
+    setExportResume(resume);
+
+    // Wait two frames to ensure the hidden export template is fully rendered.
+    await new Promise((resolve) => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(resolve);
+      });
+    });
+
+    const templateNode = exportTemplateRef.current?.querySelector(".cv-template");
+    if (!templateNode) {
+      throw new Error("Không dựng được template để xuất PDF.");
+    }
+
+    const html2pdfModule = await import("html2pdf.js");
+    const html2pdf = html2pdfModule.default;
+    const filename = `${toSafeFilename(resume.title, `resume-${resume.id}`)}.pdf`;
+
+    await html2pdf()
+      .set({
+        margin: [8, 8, 8, 8],
+        filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+        },
+        pagebreak: { mode: ["css", "legacy"] },
+      })
+      .from(templateNode)
+      .save();
+  };
+
   const handleDownload = async (resume) => {
-    const popup = window.open("", "_blank", "noopener,noreferrer");
     try {
-      await openExport(resume.id, "pdf", popup);
+      setBusy(true);
+      if (resume.source_type === "manual") {
+        await openTemplateExport(resume);
+      } else {
+        await openExport(resume.id, "pdf");
+      }
+      setMessage("Đã bắt đầu tải PDF.");
     } catch (error) {
-      if (popup) popup.close();
       setMessage(error.message || "Không thể tải file PDF.");
+    } finally {
+      setBusy(false);
+      setExportResume(null);
     }
   };
 
@@ -200,6 +283,9 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
       setBusy(false);
     }
   };
+
+  const exportTemplateKey = exportResume ? toTemplateKey(exportResume) : null;
+  const ExportTemplateComponent = exportTemplateKey ? resolveTemplateComponent(exportTemplateKey) : null;
 
   return (
     <div className="landing-page candidate-cv-page">
@@ -327,6 +413,14 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
       </section>
 
       {previewResume ? <ResumePreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} onDownload={handleDownload} /> : null}
+
+      {ExportTemplateComponent && exportResume ? (
+        <div className="rw-pdf-export-stage" aria-hidden="true" ref={exportTemplateRef}>
+          <div className="rw-pdf-export-sheet">
+            <ExportTemplateComponent data={exportResume.structured_json || {}} />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

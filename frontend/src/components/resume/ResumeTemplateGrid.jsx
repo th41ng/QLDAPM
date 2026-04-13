@@ -1,4 +1,6 @@
-﻿function getTemplateVariant(template) {
+﻿import { resolveTemplateComponent } from "./templates";
+
+function getTemplateVariant(template) {
   const key = String(template?.slug || template?.name || "")
     .toLowerCase()
     .trim();
@@ -37,6 +39,55 @@ function getSkinMeta(skin) {
   return meta[skin] || meta.generic;
 }
 
+function buildPreviewData(template, skin) {
+  const titleBySkin = {
+    "modern-blue": "Frontend Developer",
+    "ats-clean": "Business Analyst",
+    "creative-minimal": "Creative Designer",
+    "product-designer": "Product Designer",
+    "data-analyst": "Data Analyst",
+    "hr-executive": "HR Executive",
+    "marketing-pro": "Digital Marketer",
+    "minimal-slate": "Software Engineer",
+    generic: "Candidate",
+  };
+
+  const headline = titleBySkin[skin] || titleBySkin.generic;
+  return {
+    full_name: "Tien Candidate",
+    headline,
+    email: "candidate@email.com",
+    phone: "0900 000 003",
+    address: "TP. Ho Chi Minh",
+    desired_location: "Ho Chi Minh",
+    expected_salary: "18.000.000 VND",
+    current_title: headline,
+    years_experience: 2,
+    summary:
+      "Ung vien co kha nang hoc nhanh, lam viec nhom tot va da tham gia cac du an thuc te trong moi truong linh hoat.",
+    experience:
+      "2024 - Nay\nCong ty ABC\n- Phat trien tinh nang moi\n- Phoi hop team de dat KPI",
+    education:
+      "Dai hoc Mo TP.HCM\nChuyen nganh CNTT\n2020 - 2024",
+    skills: "React, JavaScript, SQL, UI/UX",
+    template_name: template.name,
+    template_slug: template.slug,
+  };
+}
+
+function TemplateLivePreview({ template, skin }) {
+  const TemplateComponent = resolveTemplateComponent(template.slug || template.name);
+  const previewData = buildPreviewData(template, skin);
+
+  return (
+    <div className={`rw-template-live-preview rw-template-live-preview--${skin}`} aria-label={`Template preview ${template.name}`}>
+      <div className="rw-template-live-canvas">
+        <TemplateComponent data={previewData} />
+      </div>
+    </div>
+  );
+}
+
 function getVariantLabel(variant) {
   if (variant === "ats") return "ATS Pro";
   if (variant === "creative") return "Creative";
@@ -72,11 +123,7 @@ export default function ResumeTemplateGrid({ templates, onUseTemplate, selectedS
                 className={selected ? `rw-template-card rw-template-card--gallery rw-template-card--${variant} rw-template-card--skin-${skin} rw-template-card--selected` : `rw-template-card rw-template-card--gallery rw-template-card--${variant} rw-template-card--skin-${skin}`}
               >
                 <div className="rw-template-thumb rw-template-thumb--gallery">
-                  {template.thumbnail_url ? (
-                    <img src={template.thumbnail_url} alt={template.name} className="rw-template-thumb-media" />
-                  ) : (
-                    <div className="rw-template-thumb-fallback">{template.name.slice(0, 2).toUpperCase()}</div>
-                  )}
+                  <TemplateLivePreview template={template} skin={skin} />
                   <div className="rw-template-thumb-overlay">
                     <div className="rw-template-thumb-badge">
                       <span>{selected ? "Dang chon" : "Template React"}</span>

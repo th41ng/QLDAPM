@@ -48,10 +48,23 @@ def create_app():
 def _build_frontend_origins(primary_origin):
     origins = {primary_origin}
     parsed = urlparse(primary_origin)
-    if parsed.scheme and parsed.hostname in {"127.0.0.1", "localhost"}:
-        host_variants = {"127.0.0.1", "localhost"}
-        for host in host_variants:
-            origins.add(f"{parsed.scheme}://{host}:{parsed.port or 5173}")
+    schemes = {parsed.scheme} if parsed.scheme else {"http"}
+    if "http" in schemes:
+        schemes.add("https")
+
+    local_hosts = {"127.0.0.1", "localhost"}
+    dev_ports = {5173, 4173}
+    if parsed.port:
+        dev_ports.add(parsed.port)
+
+    for scheme in schemes:
+        for host in local_hosts:
+            for port in dev_ports:
+                origins.add(f"{scheme}://{host}:{port}")
+
+    # Keep origin without explicit port when provided.
+    if parsed.scheme and parsed.hostname:
+        origins.add(f"{parsed.scheme}://{parsed.hostname}")
     return sorted(origins)
 
 

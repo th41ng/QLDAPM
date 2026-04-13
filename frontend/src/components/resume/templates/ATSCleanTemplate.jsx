@@ -10,13 +10,13 @@ function getRows(value) {
     .filter(Boolean);
 }
 
-export default function ATSCleanTemplate({ data }) {
+export default function ATSCleanTemplate({ data = {} }) {
   const skillRows = getRows(data.skills);
   const expRows = getRows(data.experience);
   const eduRows = getRows(data.education);
 
   return (
-    <article className="cv-template cv-template--ats" id="cv-preview">
+    <article className="cv-template cv-template--ats">
       <header className="cv-ats-header">
         <div className="cv-ats-title-row">
           <h1>{getText(data.full_name, "Ho va ten")}</h1>
@@ -31,25 +31,61 @@ export default function ATSCleanTemplate({ data }) {
       </header>
 
       <section className="cv-ats-meta-grid">
-        <p><strong>Ngay sinh:</strong> {getText(data.dob)}</p>
-        <p><strong>Gioi tinh:</strong> {getText(data.gender)}</p>
-        <p><strong>Kinh nghiem:</strong> {data.years_experience ? `${data.years_experience} nam` : "Chua cap nhat"}</p>
-        <p><strong>Muc luong:</strong> {getText(data.expected_salary)}</p>
-        <p><strong>Khu vuc:</strong> {getText(data.desired_location)}</p>
-        <p><strong>Chuc danh:</strong> {getText(data.current_title)}</p>
+        <p>
+          <strong>Ngay sinh:</strong> {getText(data.dob)}
+        </p>
+        <p>
+          <strong>Gioi tinh:</strong> {getText(data.gender)}
+        </p>
+        <p>
+          <strong>Kinh nghiem:</strong>{" "}
+          {data.years_experience
+            ? `${data.years_experience} nam`
+            : "Chua cap nhat"}
+        </p>
+        <p>
+          <strong>Muc luong:</strong> {getText(data.expected_salary)}
+        </p>
+        <p>
+          <strong>Khu vuc:</strong> {getText(data.desired_location)}
+        </p>
+        <p>
+          <strong>Chuc danh:</strong> {getText(data.current_title)}
+        </p>
       </section>
 
-      <AtsSection title="Muc tieu nghe nghiep" rows={getRows(data.summary)} fallback={getText(data.summary)} />
-      <AtsSection title="Kinh nghiem lam viec" rows={expRows} fallback={getText(data.experience)} />
-      <AtsSection title="Hoc van" rows={eduRows} fallback={getText(data.education)} />
-      <AtsSection title="Ky nang" rows={skillRows} fallback={getText(data.skills)} compact />
+      <AtsSection
+        title="Muc tieu nghe nghiep"
+        rows={getRows(data.summary)}
+        fallback={getText(data.summary)}
+      />
+      <AtsSection
+        title="Kinh nghiem lam viec"
+        rows={expRows}
+        fallback={getText(data.experience)}
+      />
+      <AtsSection
+        title="Hoc van"
+        rows={eduRows}
+        fallback={getText(data.education)}
+      />
+      <AtsSection
+        title="Ky nang"
+        rows={skillRows}
+        fallback={getText(data.skills)}
+        compact
+      />
     </article>
   );
 }
 
 function AtsSection({ title, rows, fallback, compact = false }) {
   return (
-    <section className={compact ? "cv-ats-section cv-ats-section--compact" : "cv-ats-section"}>
+    <section
+      className={
+        compact ? "cv-ats-section cv-ats-section--compact" : "cv-ats-section"
+      }
+    >
       <h2>{title}</h2>
       {rows.length ? (
         <ul className="cv-ats-list">

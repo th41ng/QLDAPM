@@ -1,24 +1,29 @@
 function getText(value, fallback = "Chua cap nhat") {
-  const text = String(value ?? "").trim();
+  const text = String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   return text || fallback;
 }
 
 function getList(value) {
   if (Array.isArray(value)) return value.filter(Boolean).map(String);
   return String(value ?? "")
-    .split(/\n|,/) 
+    .split(/\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
 function getParagraphs(value) {
   return String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .split(/\n{2,}/)
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
-export default function ModernBlueTemplate({ data }) {
+export default function ModernBlueTemplate({ data = {} }) {
   const skills = getList(data.skills);
   const expBlocks = getParagraphs(data.experience);
   const eduBlocks = getParagraphs(data.education);
@@ -31,13 +36,18 @@ export default function ModernBlueTemplate({ data }) {
   ];
   const goals = [
     { label: "Vi tri hien tai", value: data.current_title },
-    { label: "So nam kinh nghiem", value: data.years_experience ? `${data.years_experience} nam` : "Chua cap nhat" },
+    {
+      label: "So nam kinh nghiem",
+      value: data.years_experience
+        ? `${data.years_experience} nam`
+        : "Chua cap nhat",
+    },
     { label: "Muc luong mong muon", value: data.expected_salary },
     { label: "Khu vuc mong muon", value: data.desired_location },
   ];
 
   return (
-    <article className="cv-template cv-template--modern-blue" id="cv-preview">
+    <article className="cv-template cv-template--modern-blue">
       <div className="cv-modern-topline">
         <span>Modern Blue</span>
         <span>{getText(data.current_title, "Candidate Profile")}</span>
@@ -49,7 +59,9 @@ export default function ModernBlueTemplate({ data }) {
         </div>
         <div className="cv-modern-header-main">
           <h1>{getText(data.full_name, "Ho va ten")}</h1>
-          <p className="cv-modern-headline">{getText(data.headline, "Vi tri ung tuyen")}</p>
+          <p className="cv-modern-headline">
+            {getText(data.headline, "Vi tri ung tuyen")}
+          </p>
           <div className="cv-modern-contact-grid">
             {contact.map((item) => (
               <p key={item.label}>
@@ -61,7 +73,11 @@ export default function ModernBlueTemplate({ data }) {
           <div className="cv-modern-chip-row">
             <span>{getText(data.expected_salary, "Luong thuong luong")}</span>
             <span>{getText(data.desired_location, "Linh hoat dia diem")}</span>
-            <span>{data.years_experience ? `${data.years_experience} nam kinh nghiem` : "Dang cap nhat kinh nghiem"}</span>
+            <span>
+              {data.years_experience
+                ? `${data.years_experience} nam kinh nghiem`
+                : "Dang cap nhat kinh nghiem"}
+            </span>
           </div>
         </div>
       </header>
@@ -128,7 +144,8 @@ export default function ModernBlueTemplate({ data }) {
           <section className="cv-modern-block">
             <h2>Thong tin them</h2>
             <p>
-              CV duoc tao tu template Modern Blue. Ban co the tiep tuc cap nhat noi dung de phu hop voi vi tri ung tuyen.
+              CV duoc tao tu template Modern Blue. Ban co the tiep tuc cap nhat
+              noi dung de phu hop voi vi tri ung tuyen.
             </p>
           </section>
         </section>

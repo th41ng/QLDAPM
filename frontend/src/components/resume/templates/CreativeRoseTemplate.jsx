@@ -3,7 +3,8 @@ const styles = `
 
   .cv-template--creative-rose {
     font-family: 'DM Sans', sans-serif;
-    max-width: 780px;
+    max-width: 794px;
+    min-height: 1123px;
     margin: 0 auto;
     padding: 0 0 2rem;
     font-size: 13px;
@@ -244,21 +245,19 @@ function text(value, fallback = "Chưa cập nhật") {
 function list(value) {
   if (Array.isArray(value)) return value.filter(Boolean).map(String);
   return String(value ?? "")
-    .split(/\n|,/) 
+    .split(/\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
-export default function CreativeRoseTemplate({ data }) {
+export default function CreativeRoseTemplate({ data = {} }) {
   const skills = list(data.skills);
 
   const experiences = Array.isArray(data.experience_list)
     ? data.experience_list
     : null;
 
-  const projects = Array.isArray(data.project_list)
-    ? data.project_list
-    : null;
+  const projects = Array.isArray(data.project_list) ? data.project_list : null;
 
   const personalInfo = [
     { label: "Ngày sinh", value: data.dob },
@@ -271,10 +270,7 @@ export default function CreativeRoseTemplate({ data }) {
   return (
     <>
       <style>{styles}</style>
-      <article
-        className="cv-template cv-template--creative-rose"
-        id="cv-preview"
-      >
+      <article className="cv-template cv-template--creative-rose">
         <header className="cv-creative-header">
           <div>
             <p className="cv-creative-kicker">Curriculum Vitae · 2025</p>
@@ -308,7 +304,9 @@ export default function CreativeRoseTemplate({ data }) {
             </section>
 
             <section className="cv-creative-section">
-              <h2 className="cv-creative-section-title">Kinh nghiệm làm việc</h2>
+              <h2 className="cv-creative-section-title">
+                Kinh nghiệm làm việc
+              </h2>
 
               {experiences ? (
                 experiences.map((exp, idx) => (
@@ -350,7 +348,14 @@ export default function CreativeRoseTemplate({ data }) {
                   </div>
                 ))}
                 {data.github && (
-                  <p style={{ marginTop: 10, marginBottom: 0, fontSize: 12, color: "#999" }}>
+                  <p
+                    style={{
+                      marginTop: 10,
+                      marginBottom: 0,
+                      fontSize: 12,
+                      color: "#999",
+                    }}
+                  >
                     Github:{" "}
                     <a
                       href={data.github}
@@ -399,7 +404,8 @@ export default function CreativeRoseTemplate({ data }) {
               </p>
               {(data.years_of_experience || data.years_experience) && (
                 <p style={{ margin: "4px 0 0", fontSize: 12, color: "#999" }}>
-                  {data.years_of_experience || data.years_experience} năm kinh nghiệm
+                  {data.years_of_experience || data.years_experience} năm kinh
+                  nghiệm
                 </p>
               )}
             </section>
