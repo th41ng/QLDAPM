@@ -211,7 +211,7 @@ export default function ResumeWorkspacePage({ defaultTab = "list" }) {
             Một nơi để theo dõi CV đã tạo, CV upload và CV đang dùng ứng tuyển. Thẻ CV hiển thị preview trực quan, thao tác nhanh và không lẫn với màn tạo CV.
           </p>
           <div className="candidate-cv-hero-tags">
-            <span className="candidate-cv-hero-tag">Preview PDF</span>
+            <span className="candidate-cv-hero-tag">Preview CV thật</span>
             <span className="candidate-cv-hero-tag">Đặt CV chính</span>
             <span className="candidate-cv-hero-tag">Tải file thật</span>
           </div>

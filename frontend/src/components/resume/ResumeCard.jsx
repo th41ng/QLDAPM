@@ -22,12 +22,23 @@ function formatDate(value) {
   }
 }
 
+function getTemplateVariant(resume, template) {
+  if (resume.source_type === "upload") return "upload";
+  const key = String(template?.slug || template?.name || resume.template_name || "")
+    .toLowerCase()
+    .trim();
+  if (key.includes("ats")) return "ats";
+  if (key.includes("creative") || key.includes("minimal")) return "creative";
+  return "modern";
+}
+
 export default function ResumeCard({ resume, active, onPreview, onEdit, onDownload, onSetPrimary, onDelete }) {
   const structured = resume.structured_json || {};
   const template = structured.template || {};
   const skills = toSkillList(structured.skills).slice(0, 3);
   const tags = (resume.tags || []).map((tag) => tag.name).filter(Boolean).slice(0, 3);
   const isUpload = resume.source_type === "upload";
+  const variant = getTemplateVariant(resume, template);
   const previewName = isUpload ? resume.original_filename || resume.title : template.name || resume.template_name || resume.title;
   const previewHeadline = isUpload ? "CV upload" : structured.headline || structured.current_title || structured.full_name || resume.title;
   const previewSummary = isUpload
@@ -35,8 +46,8 @@ export default function ResumeCard({ resume, active, onPreview, onEdit, onDownlo
     : structured.summary || "CV tạo từ mẫu với dữ liệu thật từ hồ sơ ứng viên.";
 
   return (
-    <article className={active ? "rw-cv-card rw-cv-card--primary" : "rw-cv-card"}>
-      <div className={isUpload ? "rw-cv-card-preview rw-cv-card-preview--upload" : "rw-cv-card-preview rw-cv-card-preview--manual"}>
+    <article className={active ? `rw-cv-card rw-cv-card--${variant} rw-cv-card--primary` : `rw-cv-card rw-cv-card--${variant}`}>
+      <div className={isUpload ? "rw-cv-card-preview rw-cv-card-preview--upload" : `rw-cv-card-preview rw-cv-card-preview--manual rw-cv-card-preview--${variant}`}>
         {isUpload ? (
           <>
             <div className="rw-cv-card-upload-icon">
@@ -68,6 +79,7 @@ export default function ResumeCard({ resume, active, onPreview, onEdit, onDownlo
 
         <div className="rw-cv-card-preview-badge-row">
           <span className="rw-badge rw-badge-white">{isUpload ? "Upload" : "Tạo từ mẫu"}</span>
+          {!isUpload ? <span className={`rw-badge rw-cv-variant-badge rw-cv-variant-badge--${variant}`}>{variant.toUpperCase()}</span> : null}
           {resume.is_primary ? <span className="rw-badge rw-badge-blue">CV chính</span> : null}
         </div>
       </div>

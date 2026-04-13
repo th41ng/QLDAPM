@@ -1,10 +1,10 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../../api";
 import ResumeForm from "../../components/resume/ResumeForm";
-import ResumePreviewModal from "../../components/resume/ResumePreviewModal";
 import ResumeTabs from "../../components/resume/ResumeTabs";
 import ResumeTemplateGrid from "../../components/resume/ResumeTemplateGrid";
+import { resolveTemplateComponent } from "../../components/resume/templates";
 import { ROUTES } from "../../routes";
 
 const EMPTY_FORM = {
@@ -102,7 +102,6 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [step, setStep] = useState(1);
-  const [previewResume, setPreviewResume] = useState(null);
   const [draftSavedAt, setDraftSavedAt] = useState("");
 
   const editingResumeId = location.state?.resumeId || null;
@@ -221,34 +220,10 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
 
   const handlePreview = () => {
     setStep(3);
-    setPreviewResume({
-      title: form.title,
-      template_name: form.template_name,
-      structured_json: {
-        full_name: form.full_name,
-        email: form.email,
-        phone: form.phone,
-        dob: form.dob,
-        gender: form.gender,
-        address: form.address,
-        headline: form.headline,
-        summary: form.summary,
-        current_title: form.current_title,
-        years_experience: Number(form.years_experience || 0),
-        expected_salary: form.expected_salary,
-        desired_location: form.desired_location,
-        education: form.education,
-        experience: form.experience,
-        skills: form.skills,
-        template: {
-          name: form.template_name,
-          slug: form.template_slug,
-          preview_url: form.template_preview_url,
-        },
-      },
-      source_type: "manual",
-      is_primary: form.is_primary,
-    });
+    const element = document.getElementById("cv-live-preview");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const handleSubmit = async () => {
@@ -324,6 +299,7 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
 
   const canSubmit = Boolean(selectedTemplate || form.template_slug || form.id);
   const previewTemplate = selectedTemplate || templates.find((item) => item.slug === form.template_slug || item.name === form.template_name) || null;
+  const LiveTemplate = resolveTemplateComponent(previewTemplate?.slug || previewTemplate?.name || form.template_slug || form.template_name);
 
   return (
     <div className="landing-page candidate-cv-page candidate-cv-page--create">
@@ -393,14 +369,9 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
               <div>
                 <span className="eyebrow">Mẫu đã chọn</span>
                 <h2 className="rw-heading-2xl">{selectedTemplate?.name || form.template_name || "Mẫu CV"}</h2>
-                <p className="rw-muted-sm">{selectedTemplate?.summary || selectedTemplate?.description || "Template này sẽ được dùng để tạo CV mới."}</p>
+                <p className="rw-muted-sm">{selectedTemplate?.summary || selectedTemplate?.description || "Template nay se duoc dung de tao CV realtime."}</p>
               </div>
               <div className="candidate-create-selected-actions">
-                {selectedTemplate?.preview_url ? (
-                  <a className="rw-btn-outline-lg" href={selectedTemplate.preview_url} target="_blank" rel="noreferrer">
-                    Xem PDF mẫu
-                  </a>
-                ) : null}
                 <button
                   type="button"
                   className="rw-btn-outline-lg"
@@ -447,53 +418,24 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
           ) : null}
         </div>
 
-        <aside className="candidate-create-side">
+        <aside className="candidate-create-side" id="cv-live-preview">
           <section className="rw-card candidate-create-preview-panel">
             <div className="rw-flex-between candidate-create-section-head">
               <div>
-                <h2 className="rw-heading-2xl">Bước 3. Xem trước</h2>
-                <p className="rw-muted-sm">Xác nhận template và dữ liệu cơ bản trước khi lưu vào database.</p>
+                <h2 className="rw-heading-2xl">Bước 3. Xem trước CV thật</h2>
+                <p className="rw-muted-sm">Template được render trực tiếp từ React component và cập nhật theo form realtime.</p>
               </div>
-              <span className="rw-badge rw-badge-green">Preview</span>
+              <span className="rw-badge rw-badge-green">Live CV</span>
             </div>
 
             <div className="candidate-create-preview-frame">
-              {previewTemplate?.preview_url ? (
-                <iframe
-                  src={previewTemplate.preview_url}
-                  title={`${previewTemplate.name} preview`}
-                  className="candidate-create-preview-iframe"
-                />
+              {previewTemplate ? (
+                <div className="candidate-live-template-wrap">
+                  <LiveTemplate data={form} />
+                </div>
               ) : (
-                <div className="rw-empty-dashed">Chưa chọn template nên chưa có preview PDF.</div>
+                <div className="rw-empty-dashed">Chưa chọn template nên chưa có preview CV.</div>
               )}
-            </div>
-
-            <div className="candidate-create-preview-summary">
-              <div>
-                <span>Họ tên</span>
-                <strong>{form.full_name || "Chưa nhập"}</strong>
-              </div>
-              <div>
-                <span>Headline</span>
-                <strong>{form.headline || "Chưa nhập"}</strong>
-              </div>
-              <div>
-                <span>Email</span>
-                <strong>{form.email || "Chưa nhập"}</strong>
-              </div>
-              <div>
-                <span>Số điện thoại</span>
-                <strong>{form.phone || "Chưa nhập"}</strong>
-              </div>
-              <div>
-                <span>Kinh nghiệm</span>
-                <strong>{form.years_experience || 0} năm</strong>
-              </div>
-              <div>
-                <span>Template</span>
-                <strong>{selectedTemplate?.name || form.template_name || "Chưa chọn"}</strong>
-              </div>
             </div>
 
             <button type="button" className="btn" style={{ width: "100%", marginTop: "1rem" }} onClick={handleSubmit} disabled={busy || !canSubmit}>
@@ -504,13 +446,6 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
       </section>
 
       {draftSavedAt && activeTab === "create" ? <div className="rw-draft-hint">Nháp gần nhất: {draftSavedAt}</div> : null}
-      {previewResume ? (
-        <ResumePreviewModal
-          resume={previewResume}
-          onClose={() => setPreviewResume(null)}
-          onDownload={() => setMessage("Hãy tạo hoặc cập nhật CV trước khi tải PDF.")}
-        />
-      ) : null}
     </div>
   );
 }
