@@ -1,14 +1,12 @@
 from pathlib import Path
 from urllib.parse import urlparse
-from flask import Flask, redirect, url_for
+from flask import Flask
 from sqlalchemy import inspect, text
 
 from .api.registry import register_api_blueprints
 from .core.config import Config
 from .core.extensions import cors, db, jwt, login_manager, mail, migrate
-from .core.seed import seed_initial_data
 from .repositories import get_user_by_id
-from .web.registry import register_web_blueprints
 
 
 def create_app():
@@ -20,7 +18,10 @@ def create_app():
     mail.init_app(app)
     jwt.init_app(app)
     login_manager.init_app(app)
-    frontend_origins = _build_frontend_origins(app.config["FRONTEND_URL"])
+    frontend_origins = _build_frontend_origins(
+        app.config["FRONTEND_URL"],
+        app.config.get("FRONTEND_URLS", ""),
+    )
     cors.init_app(app, resources={r"/api/*": {"origins": frontend_origins}}, supports_credentials=True)
     login_manager.login_view = "admin.login"
 
@@ -29,29 +30,47 @@ def create_app():
         return get_user_by_id(int(user_id))
 
     register_api_blueprints(app)
-    register_web_blueprints(app)
 
     @app.route("/")
     def index():
-        return redirect(url_for("admin.login"))
+        return {"ok": True, "message": "Auth API is running"}
 
     with app.app_context():
         Path(app.config["UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
         db.create_all()
         _ensure_otp_schema()
-        if app.config["SEED_DATA"]:
-            seed_initial_data()
 
     return app
 
 
-def _build_frontend_origins(primary_origin):
-    origins = {primary_origin}
-    parsed = urlparse(primary_origin)
-    if parsed.scheme and parsed.hostname in {"127.0.0.1", "localhost"}:
-        host_variants = {"127.0.0.1", "localhost"}
-        for host in host_variants:
-            origins.add(f"{parsed.scheme}://{host}:{parsed.port or 5173}")
+def _build_frontend_origins(primary_origin, extra_origins=None):
+    origins = set()
+    candidates = [primary_origin]
+
+    if isinstance(extra_origins, str):
+        candidates.extend([item.strip() for item in extra_origins.split(",") if item.strip()])
+    elif isinstance(extra_origins, (list, tuple, set)):
+        candidates.extend([str(item).strip() for item in extra_origins if str(item).strip()])
+
+    for origin in candidates:
+        clean_origin = str(origin or "").strip().rstrip("/")
+        if not clean_origin:
+            continue
+        origins.add(clean_origin)
+
+        parsed = urlparse(clean_origin)
+        if parsed.scheme and parsed.hostname in {"127.0.0.1", "localhost"}:
+            host_variants = {"127.0.0.1", "localhost"}
+            port_variants = {parsed.port or 5173, 5173, 5174}
+            for host in host_variants:
+                for port in port_variants:
+                    origins.add(f"{parsed.scheme}://{host}:{port}")
+
+    # Always allow common local frontend dev origins to avoid CORS issues when Vite auto-increments port.
+    for host in {"127.0.0.1", "localhost"}:
+        for port in {3000, 5173, 5174, 5175, 5176, 5177, 5178, 5179, 5180}:
+            origins.add(f"http://{host}:{port}")
+
     return sorted(origins)
 
 

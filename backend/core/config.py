@@ -20,6 +20,7 @@ class Config:
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "instance/uploads")
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", 5 * 1024 * 1024))
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5173")
+    FRONTEND_URLS = os.getenv("FRONTEND_URLS", "")
 
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
