@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from datetime import date
+from datetime import date, datetime
 
 from flask import Blueprint, current_app, request, send_file
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -18,6 +18,7 @@ from ..services.cv_service import (
     generate_pdf_from_resume,
     save_uploaded_file,
 )
+from ..services.storage_service import upload_file
 
 api_resumes_bp = Blueprint("api_resumes", __name__)
 
@@ -110,8 +111,20 @@ def _render_resume_files(resume: Resume):
     docx_path = upload_dir / f"resume-{resume.id}.docx"
     generate_pdf_from_resume(render_data, str(pdf_path))
     generate_docx_from_resume(render_data, str(docx_path))
-    resume.generated_pdf_path = str(pdf_path)
-    resume.generated_docx_path = str(docx_path)
+
+    uploaded_pdf = upload_file(
+        str(pdf_path),
+        folder="jobportal/resumes/generated",
+        public_id=f"resume-{resume.id}-pdf",
+    )
+    uploaded_docx = upload_file(
+        str(docx_path),
+        folder="jobportal/resumes/generated",
+        public_id=f"resume-{resume.id}-docx",
+    )
+
+    resume.generated_pdf_path = uploaded_pdf.url if uploaded_pdf else str(pdf_path)
+    resume.generated_docx_path = uploaded_docx.url if uploaded_docx else str(docx_path)
 
 
 def _try_render_resume_files(resume: Resume):
@@ -230,12 +243,18 @@ def upload_resume():
         return json_error("Only PDF, DOC and DOCX are supported.", 400)
     filename, stored_path, mime_type = save_uploaded_file(file, current_app.config["UPLOAD_FOLDER"], f"resume-{user.id}")
     extracted_text = extract_text_from_upload(stored_path)
+    uploaded_original = upload_file(
+        stored_path,
+        folder="jobportal/resumes/uploaded",
+        public_id=f"{Path(filename).stem}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+    )
+    stored_reference = uploaded_original.url if uploaded_original else stored_path
     resume = Resume(
         user_id=user.id,
         title=request.form.get("title") or f"Uploaded CV {filename}",
         source_type="upload",
         original_filename=file.filename,
-        stored_path=stored_path,
+        stored_path=stored_reference,
         file_ext=Path(file.filename).suffix.lower(),
         mime_type=mime_type,
         raw_text=extracted_text,
