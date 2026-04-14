@@ -1,246 +1,336 @@
-﻿{% extends "admin/base.html" %}
+{% extends "admin/base.html" %}
 {% block content %}
-<section class="admin-page">
-  <div class="admin-hero">
-    <div>
+<section class="admin-page admin-dashboard">
+  <div class="admin-hero dashboard-hero">
+    <div class="dashboard-hero-copy">
       <span class="eyebrow">Dashboard</span>
       <h1>Tổng quan hệ thống</h1>
-      <p>Theo dõi toàn bộ dữ liệu admin của hệ thống việc làm ở một nơi: tài khoản, doanh nghiệp, tin tuyển dụng, hồ sơ ứng tuyển và thư viện template CV.</p>
+      <p>Theo dõi tình hình hệ thống việc làm theo thời gian, trạng thái và nhóm dữ liệu quan trọng.</p>
+      <div class="dashboard-summary-chips">
+        <span class="admin-pill admin-pill--blue">{{ period_label }}</span>
+        <span class="admin-pill admin-pill--slate">Job: {{ job_status_label }}</span>
+        <span class="admin-pill admin-pill--green">Application: {{ application_status_label }}</span>
+      </div>
     </div>
-    <div class="admin-hero-actions">
+    <div class="admin-hero-actions dashboard-hero-actions">
+      <a class="btn-outline" href="{{ url_for('admin.dashboard', period=period, job_status=job_status, application_status=application_status) }}">Làm mới</a>
       <a class="btn" href="{{ url_for('admin.jobs') }}">Quản lý jobs</a>
-      <a class="btn-outline" href="{{ url_for('admin.cv_templates') }}">Quản lý template CV</a>
     </div>
   </div>
 
-  <div class="admin-stats">
-    <article class="stat-card"><span>Total Users</span><strong>{{ stats.users }}</strong><p>Toàn bộ tài khoản trong hệ thống</p></article>
-    <article class="stat-card"><span>Admins</span><strong>{{ stats.admins }}</strong><p>Tài khoản quản trị</p></article>
-    <article class="stat-card"><span>Recruiters</span><strong>{{ stats.recruiters }}</strong><p>Nhà tuyển dụng</p></article>
-    <article class="stat-card"><span>Candidates</span><strong>{{ stats.candidates }}</strong><p>Ứng viên</p></article>
-    <article class="stat-card"><span>Jobs</span><strong>{{ stats.jobs }}</strong><p>Bài tuyển dụng</p></article>
-    <article class="stat-card"><span>Applications</span><strong>{{ stats.applications }}</strong><p>Hồ sơ ứng tuyển</p></article>
-    <article class="stat-card"><span>Categories</span><strong>{{ stats.categories }}</strong><p>Nhóm danh mục</p></article>
-    <article class="stat-card"><span>Tags</span><strong>{{ stats.tags }}</strong><p>Tag tìm kiếm</p></article>
-    <article class="stat-card"><span>CV Templates</span><strong>{{ stats.templates }}</strong><p>Thư viện template</p></article>
-  </div>
-
-  <div class="chart-grid">
-    <article class="chart-card">
-      <div class="chart-head">
-        <div>
-          <span class="eyebrow eyebrow--compact">Users</span>
-          <h2>Phân bổ tài khoản theo vai trò</h2>
-          <p>Cho biết hệ thống hiện đang nghiêng về nhóm nào: admin, recruiter hay candidate.</p>
-        </div>
-        <strong class="chart-total">{{ stats.users }}</strong>
-      </div>
-      <div class="chart-stack">
-        {% for row in charts.users_by_role %}
-          <div class="chart-row">
-            <div class="chart-row-head">
-              <span>{{ row.label }}</span>
-              <strong>{{ row.count }}</strong>
+  <div class="dashboard-shell">
+    <main class="dashboard-main">
+      <section class="dashboard-kpi-grid">
+        {% for card in kpis %}
+          <article class="stat-card stat-card--{{ card.tone }} dashboard-kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-icon kpi-icon--{{ card.tone }}">{{ card.icon | safe }}</span>
+              <span class="kpi-label">{{ card.label }}</span>
             </div>
-            <div class="chart-track">
-              <span class="chart-fill" style="width: {{ row.percent }}%; --bar-color: {{ row.color }};"></span>
-            </div>
-          </div>
+            <strong>{{ card.value }}</strong>
+            <p>{{ card.note }}</p>
+          </article>
         {% endfor %}
-      </div>
-    </article>
+      </section>
 
-    <article class="chart-card">
-      <div class="chart-head">
-        <div>
-          <span class="eyebrow eyebrow--compact">Jobs</span>
-          <h2>Trạng thái tin tuyển dụng</h2>
-          <p>Nhìn nhanh số job đang nháp, đã đăng hay đã đóng.</p>
-        </div>
-        <strong class="chart-total">{{ stats.jobs }}</strong>
-      </div>
-      <div class="chart-stack">
-        {% for row in charts.jobs_by_status %}
-          <div class="chart-row">
-            <div class="chart-row-head">
-              <span>{{ row.label }}</span>
-              <strong>{{ row.count }}</strong>
-            </div>
-            <div class="chart-track">
-              <span class="chart-fill" style="width: {{ row.percent }}%; --bar-color: {{ row.color }};"></span>
-            </div>
+
+      <section class="admin-card dashboard-chart-switcher" data-dashboard-chart-switcher>
+        <div class="chart-switcher-head">
+          <div class="chart-switcher-copy">
+            <span class="eyebrow eyebrow--compact">Phân tích dữ liệu</span>
+            <h2>Biểu đồ gọn, đổi theo tab</h2>
+            <p>Chỉ giữ một khối chart chính. Bấm tab để xem từng lát dữ liệu mà không làm dashboard bị rối.</p>
           </div>
-        {% endfor %}
-      </div>
-    </article>
-
-    <article class="chart-card">
-      <div class="chart-head">
-        <div>
-          <span class="eyebrow eyebrow--compact">Applications</span>
-          <h2>Phân luồng hồ sơ ứng tuyển</h2>
-          <p>Giúp nhận ra hồ sơ đang nằm ở giai đoạn nào trong pipeline.</p>
-        </div>
-        <strong class="chart-total">{{ stats.applications }}</strong>
-      </div>
-      <div class="chart-stack">
-        {% for row in charts.applications_by_status %}
-          <div class="chart-row">
-            <div class="chart-row-head">
-              <span>{{ row.label }}</span>
-              <strong>{{ row.count }}</strong>
-            </div>
-            <div class="chart-track">
-              <span class="chart-fill" style="width: {{ row.percent }}%; --bar-color: {{ row.color }};"></span>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    </article>
-
-    <article class="chart-card">
-      <div class="chart-head">
-        <div>
-          <span class="eyebrow eyebrow--compact">Companies</span>
-          <h2>Top công ty theo số job</h2>
-          <p>Cho thấy doanh nghiệp nào đang đăng tuyển nhiều nhất.</p>
-        </div>
-      </div>
-      <div class="rank-list">
-        {% for item in charts.top_companies %}
-          <div class="rank-item">
-            <div class="rank-top">
-              <strong>{{ loop.index }}. {{ item.name }}</strong>
-              <span>{{ item.count }} jobs</span>
-            </div>
-            <div class="rank-track">
-              <span class="rank-fill" style="width: {{ item.percent }}%;"></span>
-            </div>
-          </div>
-        {% else %}
-          <div class="empty-state">Chưa có công ty nào.</div>
-        {% endfor %}
-      </div>
-    </article>
-
-    <article class="chart-card">
-      <div class="chart-head">
-        <div>
-          <span class="eyebrow eyebrow--compact">Status</span>
-          <h2>Trạng thái người dùng</h2>
-          <p>Phân biệt tài khoản đang hoạt động và tài khoản bị khóa.</p>
-        </div>
-        <strong class="chart-total">{{ stats.users }}</strong>
-      </div>
-      <div class="chart-stack">
-        {% for row in charts.users_by_status %}
-          <div class="chart-row">
-            <div class="chart-row-head">
-              <span>{{ row.label }}</span>
-              <strong>{{ row.count }}</strong>
-            </div>
-            <div class="chart-track">
-              <span class="chart-fill" style="width: {{ row.percent }}%; --bar-color: {{ row.color }};"></span>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    </article>
-  </div>
-
-  <div class="admin-layout">
-    <section class="admin-card">
-      <div class="admin-card-head">
-        <div>
-          <h2>Dữ liệu gần đây</h2>
-          <p>Các bản ghi mới nhất để bạn kiểm tra nhanh tình trạng dữ liệu.</p>
-        </div>
-      </div>
-
-      <div class="card-grid">
-        <div class="admin-card">
-          <div class="admin-card-head"><div><h3>Users gần đây</h3><p>Cập nhật theo tài khoản.</p></div></div>
-          <div class="admin-list">
-            {% for user in recent_users %}
-              <div class="admin-item">
-                <div class="admin-item-main">
-                  <strong>{{ user.full_name }}</strong>
-                  <div class="admin-item-meta"><span>{{ user.email }}</span><span>{{ user.role }}</span><span>{{ user.status }}</span></div>
-                </div>
-              </div>
-            {% else %}
-              <div class="empty-state">Chưa có dữ liệu user.</div>
+          <div class="chart-tabs" role="tablist" aria-label="Bộ chuyển biểu đồ dashboard">
+            {% for tab in chart_tabs %}
+              <button
+                class="chart-tab{% if loop.first %} is-active{% endif %}"
+                type="button"
+                data-chart-tab="{{ tab.key }}"
+                aria-selected="{% if loop.first %}true{% else %}false{% endif %}"
+              >
+                {{ tab.tab_label }}
+              </button>
             {% endfor %}
           </div>
         </div>
 
-        <div class="admin-card">
-          <div class="admin-card-head"><div><h3>Jobs gần đây</h3><p>Các tin tuyển dụng vừa tạo.</p></div></div>
-          <div class="admin-list">
-            {% for job in recent_jobs %}
-              <div class="admin-item">
-                <div class="admin-item-main">
-                  <strong>{{ job.title }}</strong>
-                  <div class="admin-item-meta"><span>{{ job.company.company_name if job.company else '' }}</span><span>{{ job.location }}</span><span>{{ job.status }}</span></div>
+        <div class="chart-panels">
+          {% for tab in chart_tabs %}
+            {% set top_row = tab.rows[0] if tab.rows else None %}
+            <article class="chart-panel{% if loop.first %} is-active{% endif %}" data-chart-panel="{{ tab.key }}" role="tabpanel">
+              <div class="chart-panel-main">
+                <div class="chart-panel-visual">
+                  <div class="chart-head">
+                    <div>
+                      <span class="eyebrow eyebrow--compact">{{ tab.eyebrow }}</span>
+                      <h2>{{ tab.title }}</h2>
+                      <p>{{ tab.description }}</p>
+                    </div>
+                    <strong class="chart-total">{{ tab.total }}</strong>
+                  </div>
+
+                  {% if tab.pie.total > 0 %}
+                    <div class="chart-visual-ring">
+                      <div class="pie-ring" style="background: conic-gradient({{ tab.pie.gradient }});">
+                        <div class="pie-center">
+                          <strong>{{ tab.total }}</strong>
+                          <span>{{ tab.unit }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  {% else %}
+                    <div class="chart-empty-state">
+                      <div class="empty-state">{{ tab.empty }}</div>
+                    </div>
+                  {% endif %}
                 </div>
+
+                <aside class="summary-legend">
+                  <div class="summary-legend-head">
+                    <div>
+                      <span class="eyebrow eyebrow--compact">Chú giải</span>
+                      <h3>Tóm tắt {{ tab.tab_label }}</h3>
+                      <p>Dữ liệu thực từ MySQL trong {{ period_label.lower() }}.</p>
+                    </div>
+                    <span class="admin-pill admin-pill--slate">{{ tab.rows|length }} nhóm</span>
+                  </div>
+
+                  <div class="summary-top-stat">
+                    <div class="summary-stat">
+                      <strong>{{ tab.total }}</strong>
+                      <span>Tổng {{ tab.unit }}</span>
+                    </div>
+                    {% if top_row %}
+                      <div class="summary-stat summary-stat--accent">
+                        <strong>{{ top_row.percent }}%</strong>
+                        <span>{{ top_row.label }}</span>
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <div class="summary-legend-list">
+                    {% for row in tab.rows %}
+                      <div class="summary-legend-item">
+                        <span class="pie-swatch" style="background: {{ row.color }}"></span>
+                        <div>
+                          <strong>{{ row.label }}</strong>
+                          <span>{{ row.count }} ({{ row.percent }}%)</span>
+                        </div>
+                        <span class="summary-value">{{ row.count }}</span>
+                      </div>
+                    {% else %}
+                      <div class="empty-state">{{ tab.empty }}</div>
+                    {% endfor %}
+                  </div>
+                </aside>
               </div>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+      <section class="dashboard-bottom-grid">
+        <article class="admin-card dashboard-panel">
+          <div class="admin-card-head">
+            <div>
+              <h2>Top việc làm</h2>
+              <p>Những tin tuyển dụng có nhiều ứng tuyển nhất trong kỳ.</p>
+            </div>
+            <span class="admin-pill admin-pill--slate">{{ top_jobs|length }} mục</span>
+          </div>
+          <div class="dashboard-rank-list">
+            {% for item in top_jobs %}
+              <article class="dashboard-rank-item">
+                <div class="dashboard-rank-head">
+                  <div>
+                    <strong>{{ loop.index }}. {{ item.title }}</strong>
+                    <div class="admin-item-meta">
+                      <span>{{ item.company }}</span>
+                      <span>{{ item.location }}</span>
+                      <span>{{ item.recruiter }}</span>
+                    </div>
+                  </div>
+                  <span class="admin-pill {% if item.status == 'published' %}admin-pill--green{% elif item.status == 'draft' %}admin-pill--amber{% else %}admin-pill--slate{% endif %}">{{ item.status_label }}</span>
+                </div>
+                <div class="dashboard-rank-footer">
+                  <div class="dashboard-rank-metrics">
+                    <div>
+                      <strong>{{ item.applications }}</strong>
+                      <span>Ứng tuyển</span>
+                    </div>
+                    {% if item.featured %}
+                      <span class="admin-pill admin-pill--blue">Featured</span>
+                    {% endif %}
+                  </div>
+                  <div class="dashboard-progress">
+                    <span class="dashboard-progress-bar" style="width: {{ item.percent }}%;"></span>
+                  </div>
+                </div>
+              </article>
             {% else %}
-              <div class="empty-state">Chưa có dữ liệu job.</div>
+              <div class="empty-state">Chưa có job nào phù hợp bộ lọc.</div>
             {% endfor %}
           </div>
-        </div>
+        </article>
 
-        <div class="admin-card">
-          <div class="admin-card-head"><div><h3>Applications gần đây</h3><p>Hồ sơ ứng tuyển mới nhất.</p></div></div>
-          <div class="admin-list">
-            {% for app in recent_apps %}
-              <div class="admin-item">
-                <div class="admin-item-main">
-                  <strong>{{ app.candidate.full_name if app.candidate else 'N/A' }}</strong>
-                  <div class="admin-item-meta"><span>{{ app.job.title if app.job else 'N/A' }}</span><span>{{ app.status }}</span></div>
+        <article class="admin-card dashboard-panel">
+          <div class="admin-card-head">
+            <div>
+              <h2>Top nhà tuyển dụng</h2>
+              <p>Những recruiter có hoạt động mạnh nhất trong kỳ.</p>
+            </div>
+            <span class="admin-pill admin-pill--slate">{{ top_recruiters|length }} mục</span>
+          </div>
+          <div class="dashboard-rank-list">
+            {% for item in top_recruiters %}
+              <article class="dashboard-rank-item">
+                <div class="dashboard-rank-head">
+                  <div>
+                    <strong>{{ loop.index }}. {{ item.name }}</strong>
+                    <div class="admin-item-meta">
+                      <span>{{ item.company or 'Chưa có công ty' }}</span>
+                      <span>{{ item.email }}</span>
+                    </div>
+                  </div>
+                  <span class="admin-pill {% if item.status == 'active' %}admin-pill--green{% else %}admin-pill--red{% endif %}">{{ item.status }}</span>
                 </div>
-              </div>
+                <div class="dashboard-rank-footer">
+                  <div class="dashboard-rank-metrics dashboard-rank-metrics--split">
+                    <div>
+                      <strong>{{ item.jobs }}</strong>
+                      <span>Tin đăng</span>
+                    </div>
+                    <div>
+                      <strong>{{ item.applications }}</strong>
+                      <span>Ứng tuyển</span>
+                    </div>
+                  </div>
+                  <div class="dashboard-progress">
+                    <span class="dashboard-progress-bar" style="width: {{ item.percent }}%;"></span>
+                  </div>
+                </div>
+              </article>
             {% else %}
-              <div class="empty-state">Chưa có application nào.</div>
+              <div class="empty-state">Chưa có recruiter nào phù hợp bộ lọc.</div>
             {% endfor %}
           </div>
-        </div>
+        </article>
 
-        <div class="admin-card">
-          <div class="admin-card-head"><div><h3>CV Templates gần đây</h3><p>Template vừa cập nhật.</p></div></div>
+        <article class="admin-card dashboard-panel">
+          <div class="admin-card-head">
+            <div>
+              <h2>Ứng tuyển gần đây</h2>
+              <p>Hồ sơ ứng tuyển vừa cập nhật mới nhất.</p>
+            </div>
+            <span class="admin-pill admin-pill--slate">{{ recent_applications|length }} mục</span>
+          </div>
           <div class="admin-list">
-            {% for template in recent_templates %}
-              <div class="admin-item">
-                <div class="admin-item-main">
-                  <strong>{{ template.name }}</strong>
-                  <div class="admin-item-meta"><span>{{ template.file_format }}</span><span>{{ 'active' if template.is_active else 'inactive' }}</span></div>
+            {% for app in recent_applications %}
+              <article class="admin-item dashboard-application-item">
+                <div class="dashboard-application-top">
+                  <div>
+                    <strong>{{ app.candidate.full_name if app.candidate else 'N/A' }}</strong>
+                    <div class="admin-item-meta">
+                      <span>{{ app.job.title if app.job else 'N/A' }}</span>
+                      <span>{{ app.job.company.company_name if app.job and app.job.company else 'N/A' }}</span>
+                    </div>
+                  </div>
+                  <span class="admin-pill {% if app.status == 'accepted' %}admin-pill--green{% elif app.status == 'rejected' %}admin-pill--red{% elif app.status in ['reviewing', 'interview'] %}admin-pill--amber{% else %}admin-pill--blue{% endif %}">{{ app.status }}</span>
                 </div>
-              </div>
+                <div class="dashboard-application-meta">
+                  <span>CV: {{ app.resume.title if app.resume else 'N/A' }}</span>
+                  <span>{{ app.applied_at.strftime('%d/%m/%Y %H:%M') if app.applied_at else '' }}</span>
+                </div>
+              </article>
             {% else %}
-              <div class="empty-state">Chưa có template nào.</div>
+              <div class="empty-state">Chưa có application nào phù hợp bộ lọc.</div>
             {% endfor %}
           </div>
-        </div>
-      </div>
-    </section>
+        </article>
+      </section>
+    </main>
 
-    <aside class="admin-card">
-      <div class="admin-card-head">
-        <div>
-          <h2>Tác vụ nhanh</h2>
-          <p>Đi thẳng vào những màn quản trị được dùng nhiều nhất.</p>
+    <aside class="dashboard-sidebar">
+      <section class="admin-card dashboard-filter-card">
+        <div class="admin-card-head">
+          <div>
+            <h2>Bộ lọc</h2>
+            <p>Thay đổi nhanh phạm vi dữ liệu của dashboard.</p>
+          </div>
         </div>
-      </div>
-      <div class="admin-list">
-        <a class="admin-item" href="{{ url_for('admin.users') }}"><strong>Quản lý tài khoản</strong><span class="subtle">Tạo, sửa, khóa, xóa user.</span></a>
-        <a class="admin-item" href="{{ url_for('admin.companies') }}"><strong>Quản lý công ty</strong><span class="subtle">Gắn company cho recruiter.</span></a>
-        <a class="admin-item" href="{{ url_for('admin.jobs') }}"><strong>Quản lý jobs</strong><span class="subtle">CRUD bài tuyển dụng và tag.</span></a>
-        <a class="admin-item" href="{{ url_for('admin.applications') }}"><strong>Quản lý applications</strong><span class="subtle">Theo dõi và đổi trạng thái hồ sơ.</span></a>
-        <a class="admin-item" href="{{ url_for('admin.categories') }}"><strong>Quản lý categories</strong><span class="subtle">Nhóm danh mục của tag.</span></a>
-        <a class="admin-item" href="{{ url_for('admin.tags') }}"><strong>Quản lý tags</strong><span class="subtle">Tag kỹ năng, ngành, địa điểm.</span></a>
-        <a class="admin-item" href="{{ url_for('admin.cv_templates') }}"><strong>Quản lý CV templates</strong><span class="subtle">Thư viện template CV online.</span></a>
-      </div>
+        <form class="admin-form dashboard-filter-form" method="get">
+          <div class="field full">
+            <label for="period">Khoảng thời gian</label>
+            <select id="period" name="period">
+              {% for value, label in period_options %}
+                <option value="{{ value }}" {% if value == period %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field full">
+            <label for="job_status">Trạng thái job</label>
+            <select id="job_status" name="job_status">
+              {% for value, label in job_status_options %}
+                <option value="{{ value }}" {% if value == job_status %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field full">
+            <label for="application_status">Trạng thái application</label>
+            <select id="application_status" name="application_status">
+              {% for value, label in application_status_options %}
+                <option value="{{ value }}" {% if value == application_status %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="dashboard-filter-actions">
+            <button class="btn" type="submit">Áp dụng</button>
+            <a class="btn-outline" href="{{ url_for('admin.dashboard') }}">Xóa lọc</a>
+          </div>
+        </form>
+      </section>
+
+      <section class="admin-card dashboard-filter-card">
+        <div class="admin-card-head">
+          <div>
+            <h2>Đi tới nhanh</h2>
+            <p>Nhấy thẳng vào màn quản trị liên quan.</p>
+          </div>
+        </div>
+        <div class="admin-list">
+          <a class="admin-item" href="{{ url_for('admin.users') }}"><strong>Quản lý tài khoản</strong><span class="subtle">Người dùng, nhà tuyển dụng, ứng viên.</span></a>
+          <a class="admin-item" href="{{ url_for('admin.jobs') }}"><strong>Quản lý jobs</strong><span class="subtle">Tin tuyển dụng và tag.</span></a>
+          <a class="admin-item" href="{{ url_for('admin.applications') }}"><strong>Quản lý applications</strong><span class="subtle">Theo dõi hồ sơ ứng tuyển.</span></a>
+          <a class="admin-item" href="{{ url_for('admin.cv_templates') }}"><strong>CV mẫu</strong><span class="subtle">Thư viện template CV.</span></a>
+        </div>
+      </section>
     </aside>
   </div>
 </section>
+
+<script>
+  (() => {
+    const root = document.querySelector('[data-dashboard-chart-switcher]');
+    if (!root) return;
+
+    const tabs = Array.from(root.querySelectorAll('[data-chart-tab]'));
+    const panels = Array.from(root.querySelectorAll('[data-chart-panel]'));
+
+    const activate = (key) => {
+      tabs.forEach((button) => {
+        const active = button.dataset.chartTab === key;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+
+      panels.forEach((panel) => {
+        panel.classList.toggle('is-active', panel.dataset.chartPanel === key);
+      });
+    };
+
+    tabs.forEach((button) => {
+      button.addEventListener('click', () => activate(button.dataset.chartTab));
+    });
+  })();
+</script>
 {% endblock %}

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from functools import wraps
 
@@ -22,22 +22,49 @@ USER_STATUS_OPTIONS = ["active", "locked"]
 JOB_STATUS_OPTIONS = ["draft", "published", "closed"]
 APPLICATION_STATUS_OPTIONS = ["submitted", "reviewing", "interview", "accepted", "rejected"]
 FILE_FORMAT_OPTIONS = ["both", "pdf", "docx"]
-CHART_COLORS = {
-    "admin": "#2458f2",
-    "recruiter": "#0f766e",
-    "candidate": "#d97706",
-    "active": "#059669",
-    "locked": "#dc2626",
-    "draft": "#64748b",
-    "published": "#2563eb",
-    "closed": "#7c3aed",
-    "submitted": "#2563eb",
-    "reviewing": "#0f766e",
-    "interview": "#d97706",
-    "accepted": "#059669",
-    "rejected": "#dc2626",
+DASHBOARD_PERIOD_OPTIONS = [
+    ("7d", "7 ngày"),
+    ("30d", "30 ngày"),
+    ("90d", "90 ngày"),
+    ("month", "Tháng này"),
+    ("year", "Năm nay"),
+]
+DASHBOARD_JOB_STATUS_OPTIONS = [
+    ("draft", "Nháp"),
+    ("published", "Đang đăng"),
+    ("closed", "Đã đóng"),
+]
+DASHBOARD_APPLICATION_STATUS_OPTIONS = [
+    ("submitted", "Đã gửi"),
+    ("reviewing", "Đang xem xét"),
+    ("interview", "Phỏng vấn"),
+    ("accepted", "Đã chấp nhận"),
+    ("rejected", "Từ chối"),
+    ("withdrawn", "Đã rút"),
+]
+DASHBOARD_ROLE_LABELS = {
+    "admin": "Quản trị",
+    "recruiter": "Nhà tuyển dụng",
+    "candidate": "Ứng viên",
+}
+KPI_ICON_SVGS = {
+    "blue": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>',
+    "green": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20h12"></path><path d="M6 16h12"></path><path d="M8 20V8l4-4 4 4v12"></path></svg>',
+    "amber": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="9"></circle></svg>',
+    "red": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v8"></path><path d="M8 12h8"></path><circle cx="12" cy="12" r="9"></circle></svg>',
+    "slate": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V4"></path><path d="M4 19l16-5"></path><path d="M8 8h6"></path><path d="M8 12h4"></path></svg>',
 }
 
+
+CHART_COLORS = {
+    "blue": "#2458f2",
+    "green": "#059669",
+    "amber": "#d97706",
+    "red": "#dc2626",
+    "slate": "#64748b",
+    "violet": "#7c3aed",
+    "cyan": "#0891b2",
+}
 
 def admin_required(fn):
     @wraps(fn)
@@ -168,6 +195,58 @@ def _build_chart_rows(items):
     return rows
 
 
+def _build_pie_chart(rows):
+    total = sum(row["count"] for row in rows)
+    if not total:
+        return {"total": 0, "gradient": "#edf2ff 0deg 360deg", "segments": []}
+
+    start = 0.0
+    segments = []
+    gradient_parts = []
+    for index, row in enumerate(rows):
+        count = row["count"]
+        sweep = 360.0 * count / total if total else 0
+        end = 360.0 if index == len(rows) - 1 else start + sweep
+        gradient_parts.append(f'{row["color"]} {start:.2f}deg {end:.2f}deg')
+        segments.append(
+            {
+                "key": row["key"],
+                "label": row["label"],
+                "count": count,
+                "color": row["color"],
+                "percent": row["percent"],
+            }
+        )
+        start = end
+
+    return {"total": total, "gradient": ", ".join(gradient_parts), "segments": segments}
+
+
+def _dashboard_cutoff(period):
+    now = datetime.utcnow()
+    if period == "7d":
+        return now - timedelta(days=7)
+    if period == "30d":
+        return now - timedelta(days=30)
+    if period == "90d":
+        return now - timedelta(days=90)
+    if period == "month":
+        return datetime(now.year, now.month, 1)
+    if period == "year":
+        return datetime(now.year, 1, 1)
+    return None
+
+
+def _dashboard_period_label(period):
+    lookup = dict(DASHBOARD_PERIOD_OPTIONS)
+    return lookup.get(period, "30 ngày")
+
+
+def _dashboard_status_label(options, value):
+    lookup = dict(options)
+    return lookup.get(value, "Tất cả")
+
+
 @admin_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated and current_user.role == "admin":
@@ -179,7 +258,7 @@ def login():
         if user and user.status == "active" and verify_password(user.password_hash, password):
             login_user(user)
             return redirect(url_for("admin.dashboard"))
-        flash("Sai tÃ i khoáº£n hoáº·c máº­t kháº©u admin.", "error")
+        flash("Sai tài khoản hoặc mật khẩu admin.", "error")
     return render_template("admin/login.html")
 
 
@@ -193,85 +272,336 @@ def logout():
 @login_required
 @admin_required
 def dashboard():
-    stats = {
-        "users": User.query.count(),
-        "admins": User.query.filter_by(role="admin").count(),
-        "recruiters": User.query.filter_by(role="recruiter").count(),
-        "candidates": User.query.filter_by(role="candidate").count(),
-        "jobs": JobPosting.query.count(),
-        "companies": Company.query.count(),
-        "applications": Application.query.count(),
-        "categories": Category.query.count(),
-        "tags": Tag.query.count(),
-        "templates": CvTemplate.query.count(),
-    }
-    recent_users = User.query.order_by(User.updated_at.desc()).limit(6).all()
-    recent_jobs = JobPosting.query.order_by(JobPosting.updated_at.desc()).limit(6).all()
-    recent_apps = Application.query.order_by(Application.updated_at.desc()).limit(6).all()
-    recent_templates = CvTemplate.query.order_by(CvTemplate.created_at.desc()).limit(6).all()
+    period = request.args.get("period", "30d").strip() or "30d"
+    job_status = request.args.get("job_status", "all").strip() or "all"
+    application_status = request.args.get("application_status", "all").strip() or "all"
+
+    cutoff = _dashboard_cutoff(period)
+    period_label = _dashboard_period_label(period)
+    job_status_label = _dashboard_status_label(DASHBOARD_JOB_STATUS_OPTIONS, job_status)
+    application_status_label = _dashboard_status_label(DASHBOARD_APPLICATION_STATUS_OPTIONS, application_status)
+
+    user_period_query = User.query
+    recruiter_period_query = User.query.filter(User.role == "recruiter")
+    job_period_query = JobPosting.query
+    application_period_query = Application.query
+    resume_period_query = Resume.query
+
+    if cutoff:
+        user_period_query = user_period_query.filter(User.created_at >= cutoff)
+        recruiter_period_query = recruiter_period_query.filter(User.created_at >= cutoff)
+        job_period_query = job_period_query.filter(JobPosting.created_at >= cutoff)
+        application_period_query = application_period_query.filter(Application.applied_at >= cutoff)
+        resume_period_query = resume_period_query.filter(Resume.created_at >= cutoff)
+
+    if job_status != "all":
+        job_period_query = job_period_query.filter(JobPosting.status == job_status)
+    if application_status != "all":
+        application_period_query = application_period_query.filter(Application.status == application_status)
+
+    total_users = User.query.count()
+    total_recruiters = User.query.filter_by(role="recruiter").count()
+    total_jobs = JobPosting.query.count()
+    total_applications = Application.query.count()
+    total_resumes = Resume.query.count()
+    total_templates = CvTemplate.query.filter(CvTemplate.is_active.is_(True)).count()
+
+    kpis = [
+        {
+            "key": "users",
+            "label": "Người dùng mới",
+            "value": user_period_query.count(),
+            "note": f"Trong {period_label.lower()}",
+            "icon": KPI_ICON_SVGS["blue"],
+        },
+        {
+            "key": "recruiters",
+            "label": "Nhà tuyển dụng mới",
+            "value": recruiter_period_query.count(),
+            "note": f"Trong {period_label.lower()}",
+            "icon": KPI_ICON_SVGS["green"],
+        },
+        {
+            "key": "jobs",
+            "label": "Job mới",
+            "value": job_period_query.count(),
+            "note": f"Trạng thái: {job_status_label.lower()}",
+            "icon": KPI_ICON_SVGS["amber"],
+        },
+        {
+            "key": "applications",
+            "label": "Application mới",
+            "value": application_period_query.count(),
+            "note": f"Trạng thái: {application_status_label.lower()}",
+            "icon": KPI_ICON_SVGS["red"],
+        },
+        {
+            "key": "resumes",
+            "label": "CV mới",
+            "value": resume_period_query.count(),
+            "note": f"Trong {period_label.lower()}",
+            "icon": KPI_ICON_SVGS["slate"],
+        },
+        {
+            "key": "templates",
+            "label": "Template hoạt động",
+            "value": total_templates,
+            "note": "Thư viện CV đang bật",
+            "icon": KPI_ICON_SVGS["blue"],
+        },
+    ]
+    users_by_role_query = User.query
+    if cutoff:
+        users_by_role_query = users_by_role_query.filter(User.created_at >= cutoff)
     users_by_role = _build_chart_rows(
         [
-            ("admin", "Admin", stats["admins"]),
-            ("recruiter", "Recruiter", stats["recruiters"]),
-            ("candidate", "Candidate", stats["candidates"]),
+            ("admin", DASHBOARD_ROLE_LABELS["admin"], users_by_role_query.filter(User.role == "admin").count()),
+            ("recruiter", DASHBOARD_ROLE_LABELS["recruiter"], users_by_role_query.filter(User.role == "recruiter").count()),
+            ("candidate", DASHBOARD_ROLE_LABELS["candidate"], users_by_role_query.filter(User.role == "candidate").count()),
         ]
     )
-    users_by_status = _build_chart_rows(
-        [
-            ("active", "Active", User.query.filter_by(status="active").count()),
-            ("locked", "Locked", User.query.filter_by(status="locked").count()),
-        ]
-    )
+
+    jobs_by_status_query = JobPosting.query
+    if cutoff:
+        jobs_by_status_query = jobs_by_status_query.filter(JobPosting.created_at >= cutoff)
+    if job_status != "all":
+        jobs_by_status_query = jobs_by_status_query.filter(JobPosting.status == job_status)
     jobs_by_status = _build_chart_rows(
         [
-            ("draft", "Draft", JobPosting.query.filter_by(status="draft").count()),
-            ("published", "Published", JobPosting.query.filter_by(status="published").count()),
-            ("closed", "Closed", JobPosting.query.filter_by(status="closed").count()),
+            ("draft", "Nháp", jobs_by_status_query.filter(JobPosting.status == "draft").count()),
+            ("published", "Đang đăng", jobs_by_status_query.filter(JobPosting.status == "published").count()),
+            ("closed", "Đã đóng", jobs_by_status_query.filter(JobPosting.status == "closed").count()),
         ]
     )
+
+    applications_by_status_query = Application.query
+    if cutoff:
+        applications_by_status_query = applications_by_status_query.filter(Application.applied_at >= cutoff)
+    if application_status != "all":
+        applications_by_status_query = applications_by_status_query.filter(Application.status == application_status)
     applications_by_status = _build_chart_rows(
         [
-            ("submitted", "Submitted", Application.query.filter_by(status="submitted").count()),
-            ("reviewing", "Reviewing", Application.query.filter_by(status="reviewing").count()),
-            ("interview", "Interview", Application.query.filter_by(status="interview").count()),
-            ("accepted", "Accepted", Application.query.filter_by(status="accepted").count()),
-            ("rejected", "Rejected", Application.query.filter_by(status="rejected").count()),
+            ("submitted", "Đã gửi", applications_by_status_query.filter(Application.status == "submitted").count()),
+            ("reviewing", "Đang xem xét", applications_by_status_query.filter(Application.status == "reviewing").count()),
+            ("interview", "Phỏng vấn", applications_by_status_query.filter(Application.status == "interview").count()),
+            ("accepted", "Đã chấp nhận", applications_by_status_query.filter(Application.status == "accepted").count()),
+            ("rejected", "Từ chối", applications_by_status_query.filter(Application.status == "rejected").count()),
+            ("withdrawn", "Đã rút", applications_by_status_query.filter(Application.status == "withdrawn").count()),
         ]
     )
-    company_job_counts = (
+
+    resume_source_query = Resume.query
+    if cutoff:
+        resume_source_query = resume_source_query.filter(Resume.created_at >= cutoff)
+    resume_source_rows = _build_chart_rows(
+        [
+            ("template", "Tạo từ mẫu", resume_source_query.filter(Resume.template_name.isnot(None)).count()),
+            ("manual", "Tạo thủ công", resume_source_query.filter(Resume.source_type == "manual", Resume.template_name.is_(None)).count()),
+            ("upload", "Upload", resume_source_query.filter(Resume.source_type == "upload").count()),
+        ]
+    )
+
+    user_role_pie = _build_pie_chart(users_by_role)
+    job_status_pie = _build_pie_chart(jobs_by_status)
+    resume_source_pie = _build_pie_chart(resume_source_rows)
+
+
+    chart_tabs = [
+        {
+            "key": "users",
+            "tab_label": "Tài khoản",
+            "eyebrow": "Người dùng",
+            "title": "Phân bổ tài khoản theo vai trò",
+            "description": "Cơ cấu admin, recruiter và candidate trong kỳ đã chọn.",
+            "total": total_users,
+            "unit": "tài khoản",
+            "pie": user_role_pie,
+            "rows": users_by_role,
+            "empty": "Không có dữ liệu tài khoản trong kỳ này.",
+        },
+        {
+            "key": "jobs",
+            "tab_label": "Việc làm",
+            "eyebrow": "Tin tuyển dụng",
+            "title": "Trạng thái tin tuyển dụng",
+            "description": "Biểu đồ tròn giúp nhìn nhanh tỷ lệ job theo trạng thái hoạt động.",
+            "total": total_jobs,
+            "unit": "job",
+            "pie": job_status_pie,
+            "rows": jobs_by_status,
+            "empty": "Không có dữ liệu job trong kỳ này.",
+        },
+        {
+            "key": "applications",
+            "tab_label": "Ứng tuyển",
+            "eyebrow": "Hồ sơ",
+            "title": "Trạng thái hồ sơ ứng tuyến",
+            "description": "Theo dõi luồng xử lý hồ sơ từ submitted đến accepted / rejected.",
+            "total": total_applications,
+            "unit": "application",
+            "pie": _build_pie_chart(applications_by_status),
+            "rows": applications_by_status,
+            "empty": "Không có dữ liệu application trong kỳ này.",
+        },
+        {
+            "key": "cv",
+            "tab_label": "CV",
+            "eyebrow": "Hồ sơ CV",
+            "title": "Cơ cấu CV trong hệ thống",
+            "description": "So sánh CV tạo từ mẫu, tạo thủ công và upload để nhìn nhanh thói quen sử dụng.",
+            "total": total_resumes,
+            "unit": "CV",
+            "pie": resume_source_pie,
+            "rows": resume_source_rows,
+            "empty": "Không có dữ liệu CV trong kỳ này.",
+        },
+    ]
+    top_jobs_query = (
         db.session.query(
-            Company.id,
-            Company.company_name,
-            func.count(JobPosting.id).label("job_count"),
+            JobPosting,
+            Company.company_name.label("company_name"),
+            User.full_name.label("recruiter_name"),
+            func.count(func.distinct(Application.id)).label("application_count"),
+            func.max(Application.applied_at).label("last_application_at"),
         )
-        .outerjoin(JobPosting, JobPosting.company_id == Company.id)
-        .group_by(Company.id)
-        .order_by(func.count(JobPosting.id).desc(), Company.company_name.asc())
+        .join(Company, Company.id == JobPosting.company_id)
+        .join(User, User.id == JobPosting.recruiter_user_id)
+        .outerjoin(Application, Application.job_id == JobPosting.id)
+    )
+    if cutoff:
+        top_jobs_query = top_jobs_query.filter(JobPosting.created_at >= cutoff)
+    if job_status != "all":
+        top_jobs_query = top_jobs_query.filter(JobPosting.status == job_status)
+    if application_status != "all":
+        top_jobs_query = top_jobs_query.filter(Application.status == application_status)
+    top_job_rows = (
+        top_jobs_query.group_by(JobPosting.id, Company.company_name, User.full_name)
+        .order_by(func.count(func.distinct(Application.id)).desc(), JobPosting.updated_at.desc())
         .limit(6)
         .all()
     )
-    top_companies = [
+    top_job_max = max((row.application_count or 0) for row in top_job_rows) or 1
+    top_jobs = [
         {
-            "name": name,
-            "count": count,
-            "percent": round((count / (company_job_counts[0].job_count or 1)) * 100, 1) if company_job_counts else 0,
+            "id": job.id,
+            "title": job.title,
+            "slug": job.slug,
+            "company": company_name,
+            "recruiter": recruiter_name,
+            "location": job.location,
+            "status": job.status,
+            "status_label": _dashboard_status_label(DASHBOARD_JOB_STATUS_OPTIONS, job.status),
+            "applications": int(application_count or 0),
+            "last_application_at": last_application_at,
+            "percent": round(((application_count or 0) / top_job_max) * 100, 1),
+            "featured": bool(job.is_featured),
         }
-        for _, name, count in company_job_counts
+        for job, company_name, recruiter_name, application_count, last_application_at in top_job_rows
     ]
+
+    recruiter_query = (
+        db.session.query(
+            User.id,
+            User.full_name,
+            User.email,
+            User.status,
+            Company.company_name,
+            func.count(func.distinct(JobPosting.id)).label("job_count"),
+            func.count(func.distinct(Application.id)).label("application_count"),
+        )
+        .outerjoin(Company, Company.recruiter_user_id == User.id)
+        .outerjoin(JobPosting, JobPosting.recruiter_user_id == User.id)
+        .outerjoin(Application, Application.job_id == JobPosting.id)
+        .filter(User.role == "recruiter")
+    )
+    if cutoff:
+        recruiter_query = recruiter_query.filter(or_(User.created_at >= cutoff, JobPosting.created_at >= cutoff, Application.applied_at >= cutoff))
+    if job_status != "all":
+        recruiter_query = recruiter_query.filter(JobPosting.status == job_status)
+    if application_status != "all":
+        recruiter_query = recruiter_query.filter(Application.status == application_status)
+    recruiter_rows = (
+        recruiter_query.group_by(User.id, User.full_name, User.email, User.status, Company.company_name)
+        .order_by(func.count(func.distinct(JobPosting.id)).desc(), func.count(func.distinct(Application.id)).desc(), User.full_name.asc())
+        .limit(6)
+        .all()
+    )
+    recruiter_max = max((int(job_count or 0) + int(application_count or 0)) for _, _, _, _, _, job_count, application_count in recruiter_rows) or 1
+    top_recruiters = [
+        {
+            "id": user_id,
+            "name": full_name,
+            "email": email,
+            "status": status,
+            "company": company_name,
+            "jobs": int(job_count or 0),
+            "applications": int(application_count or 0),
+            "score": int(job_count or 0) + int(application_count or 0),
+            "percent": round(((int(job_count or 0) + int(application_count or 0)) / recruiter_max) * 100, 1),
+        }
+        for user_id, full_name, email, status, company_name, job_count, application_count in recruiter_rows
+    ]
+
+    recent_apps_query = (
+        Application.query.options(
+            joinedload(Application.candidate),
+            joinedload(Application.resume),
+            joinedload(Application.job).joinedload(JobPosting.company),
+        )
+        .join(Application.job)
+    )
+    if cutoff:
+        recent_apps_query = recent_apps_query.filter(Application.applied_at >= cutoff)
+    if job_status != "all":
+        recent_apps_query = recent_apps_query.filter(JobPosting.status == job_status)
+    if application_status != "all":
+        recent_apps_query = recent_apps_query.filter(Application.status == application_status)
+    recent_applications = recent_apps_query.order_by(Application.applied_at.desc()).limit(6).all()
+
+    filter_summary = [
+        f"{period_label}",
+        f"Job: {job_status_label}",
+        f"Application: {application_status_label}",
+    ]
+
     return render_template(
         "admin/dashboard.html",
-        stats=stats,
-        recent_users=recent_users,
-        recent_jobs=recent_jobs,
-        recent_apps=recent_apps,
-        recent_templates=recent_templates,
+        active_templates=total_templates,
+        filter_summary=filter_summary,
+        job_status=job_status,
+        application_status=application_status,
+        job_status_label=job_status_label,
+        application_status_label=application_status_label,
+        period=period,
+        period_label=period_label,
+        kpis=kpis,
+        top_jobs=top_jobs,
+        top_recruiters=top_recruiters,
+        recent_applications=recent_applications,
         charts={
             "users_by_role": users_by_role,
-            "users_by_status": users_by_status,
             "jobs_by_status": jobs_by_status,
             "applications_by_status": applications_by_status,
-            "top_companies": top_companies,
+            "resumes_by_source": resume_source_rows,
         },
+        pie_charts={
+            "users_by_role": user_role_pie,
+            "jobs_by_status": job_status_pie,
+            "applications_by_status": _build_pie_chart(applications_by_status),
+            "resumes_by_source": resume_source_pie,
+        },
+        chart_tabs=chart_tabs,
+        totals={
+            "users": total_users,
+            "recruiters": total_recruiters,
+            "jobs": total_jobs,
+            "applications": total_applications,
+            "resumes": total_resumes,
+            "templates": total_templates,
+        },
+        period_options=DASHBOARD_PERIOD_OPTIONS,
+        job_status_options=DASHBOARD_JOB_STATUS_OPTIONS,
+        application_status_options=DASHBOARD_APPLICATION_STATUS_OPTIONS,
     )
 
 
@@ -294,7 +624,7 @@ def users():
                 flash("KhÃ´ng thá»ƒ khÃ³a chÃ­nh tÃ i khoáº£n admin Ä‘ang Ä‘Äƒng nháº­p.", "error")
             else:
                 user.status = "locked" if user.status == "active" else "active"
-                _commit("ÄÃ£ cáº­p nháº­t tráº¡ng thÃ¡i tÃ i khoáº£n.")
+                _commit("Đã cập nhật trạng thái tài khoản.")
             return redirect(url_for("admin.users", page=page))
 
         if action == "delete" and user:
@@ -304,7 +634,7 @@ def users():
                 flash("Pháº£i giá»¯ láº¡i Ã­t nháº¥t má»™t tÃ i khoáº£n admin.", "error")
             else:
                 db.session.delete(user)
-                _commit("ÄÃ£ xÃ³a tÃ i khoáº£n.")
+                _commit("Đã xóa tài khoản.")
             return redirect(url_for("admin.users", page=page))
 
         full_name = request.form.get("full_name", "").strip()
@@ -339,7 +669,7 @@ def users():
                 user.avatar_url = avatar_url
             if password:
                 user.password_hash = hash_password(password)
-            _commit("ÄÃ£ cáº­p nháº­t tÃ i khoáº£n.")
+            _commit("Đã cập nhật tài khoản.")
         else:
             if not password:
                 flash("Máº­t kháº©u lÃ  báº¯t buá»™c khi táº¡o tÃ i khoáº£n.", "error")
@@ -522,7 +852,7 @@ def companies():
 
         if action == "delete" and company:
             db.session.delete(company)
-            _commit("ÄÃ£ xÃ³a cÃ´ng ty.")
+            _commit("Đã xóa công ty.")
             return redirect(url_for("admin.companies"))
 
         recruiter_user_id = _to_int(request.form.get("recruiter_user_id"))
@@ -535,7 +865,7 @@ def companies():
         industry = request.form.get("industry", "").strip() or None
 
         if not recruiter_user_id or not company_name:
-            flash("Vui lÃ²ng chá»n recruiter vÃ  nháº­p tÃªn cÃ´ng ty.", "error")
+            flash("Vui lòng chọn recruiter và nhập tên công ty.", "error")
             return redirect(url_for("admin.companies", edit=company_id) if company_id else url_for("admin.companies"))
 
         recruiter = _load_user_or_none(recruiter_user_id)
@@ -557,7 +887,7 @@ def companies():
             company.description = description
             company.logo_url = logo_url
             company.industry = industry
-            _commit("ÄÃ£ cáº­p nháº­t cÃ´ng ty.")
+            _commit("Đã cập nhật công ty.")
         else:
             db.session.add(
                 Company(
@@ -605,7 +935,7 @@ def jobs():
 
         if action == "delete" and job:
             db.session.delete(job)
-            _commit("ÄÃ£ xÃ³a job.")
+            _commit("Đã xóa job.")
             return redirect(url_for("admin.jobs"))
 
         company_id = _to_int(request.form.get("company_id"))
@@ -667,7 +997,7 @@ def jobs():
             job.tags = Tag.query.filter(Tag.id.in_(tag_ids)).all() if tag_ids else []
             if job.status == "published" and not job.published_at:
                 job.published_at = datetime.utcnow()
-            _commit("ÄÃ£ cáº­p nháº­t job.")
+            _commit("Đã cập nhật job.")
         else:
             job = JobPosting(
                 recruiter_user_id=recruiter_user_id,
@@ -754,7 +1084,7 @@ def applications():
 
         if action == "delete" and app_row:
             db.session.delete(app_row)
-            _commit("ÄÃ£ xÃ³a application.")
+            _commit("Đã xóa application.")
             return redirect(url_for("admin.applications"))
 
         if not app_row:
@@ -792,12 +1122,12 @@ def categories():
 
         if action == "delete" and category:
             db.session.delete(category)
-            _commit("ÄÃ£ xÃ³a category.")
+            _commit("Đã xóa category.")
             return redirect(url_for("admin.categories"))
 
         if action == "toggle" and category:
             category.is_active = not bool(category.is_active)
-            _commit("ÄÃ£ cáº­p nháº­t tráº¡ng thÃ¡i category.")
+            _commit("Đã cập nhật trạng thái category.")
             return redirect(url_for("admin.categories"))
 
         name = request.form.get("name", "").strip()
@@ -819,7 +1149,7 @@ def categories():
             category.slug = slug_value
             category.description = description
             category.is_active = is_active
-            _commit("ÄÃ£ cáº­p nháº­t category.")
+            _commit("Đã cập nhật category.")
         else:
             db.session.add(Category(name=name, slug=slug_value, description=description, is_active=is_active))
             _commit("ÄÃ£ táº¡o category má»›i.")
@@ -849,12 +1179,12 @@ def tags():
 
         if action == "delete" and tag:
             db.session.delete(tag)
-            _commit("ÄÃ£ xÃ³a tag.")
+            _commit("Đã xóa tag.")
             return redirect(url_for("admin.tags"))
 
         if action == "toggle" and tag:
             tag.is_active = not bool(tag.is_active)
-            _commit("ÄÃ£ cáº­p nháº­t tráº¡ng thÃ¡i tag.")
+            _commit("Đã cập nhật trạng thái tag.")
             return redirect(url_for("admin.tags"))
 
         name = request.form.get("name", "").strip()
@@ -865,7 +1195,7 @@ def tags():
         category = _load_category_or_none(category_id)
 
         if not name or not category:
-            flash("Vui lÃ²ng nháº­p tÃªn tag vÃ  chá»n category.", "error")
+            flash("Vui lòng nhập tên tag và chọn category.", "error")
             return redirect(url_for("admin.tags", edit=tag.id if tag else None))
 
         slug_value = slug_value or slugify(name)
@@ -880,7 +1210,7 @@ def tags():
             tag.description = description
             tag.category = category
             tag.is_active = is_active
-            _commit("ÄÃ£ cáº­p nháº­t tag.")
+            _commit("Đã cập nhật tag.")
         else:
             db.session.add(Tag(name=name, slug=slug_value, description=description, category=category, is_active=is_active))
             _commit("ÄÃ£ táº¡o tag má»›i.")
@@ -910,12 +1240,12 @@ def cv_templates():
 
         if action == "delete" and template:
             db.session.delete(template)
-            _commit("ÄÃ£ xÃ³a template CV.")
+            _commit("Đã xóa template CV.")
             return redirect(url_for("admin.cv_templates"))
 
         if action == "toggle" and template:
             template.is_active = not bool(template.is_active)
-            _commit("ÄÃ£ cáº­p nháº­t tráº¡ng thÃ¡i template.")
+            _commit("Đã cập nhật trạng thái template.")
             return redirect(url_for("admin.cv_templates"))
 
         name = request.form.get("name", "").strip()
@@ -949,7 +1279,7 @@ def cv_templates():
             template.preview_url = preview_url
             template.file_format = file_format
             template.is_active = is_active
-            _commit("ÄÃ£ cáº­p nháº­t template CV.")
+            _commit("Đã cập nhật template CV.")
         else:
             db.session.add(
                 CvTemplate(

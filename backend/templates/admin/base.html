@@ -16,17 +16,37 @@
       </div>
     </div>
 
-    <nav>
-      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
-      <a href="{{ url_for('admin.users') }}">Users</a>
-      <a href="{{ url_for('admin.companies') }}">Companies</a>
-      <a href="{{ url_for('admin.jobs') }}">Jobs</a>
-      <a href="{{ url_for('admin.applications') }}">Applications</a>
-      <a href="{{ url_for('admin.resumes') }}">Resumes</a>
-      <a href="{{ url_for('admin.categories') }}">Categories</a>
-      <a href="{{ url_for('admin.tags') }}">Tags</a>
-      <a href="{{ url_for('admin.cv_templates') }}">CV Templates</a>
-      <a href="{{ url_for('admin.logout') }}">Logout</a>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('admin.dashboard') }}" class="{% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"></path><path d="M6 20V10"></path><path d="M12 20V4"></path><path d="M18 20v-6"></path></svg></span><span>Dashboard</span></span>
+      </a>
+      <a href="{{ url_for('admin.users') }}" class="{% if request.endpoint == 'admin.users' %}active{% endif %}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span><span>Users</span></span>
+      </a>
+      <a href="{{ url_for('admin.companies') }}" class="{% if request.endpoint == 'admin.companies' %}active{% endif %}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21h6"></path><path d="M12 17v4"></path><path d="M5 4h14v10H5z"></path><path d="M9 12h6"></path></svg></span><span>Companies</span></span>
+      </a>
+      <a href="{{ url_for('admin.jobs') }}" class="{% if request.endpoint == 'admin.jobs' %}active{% endif %}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"></path><rect x="6" y="4" width="12" height="16" rx="2"></rect><path d="M9 8h6"></path><path d="M9 12h6"></path><path d="M9 16h6"></path></svg></span><span>Jobs</span></span>
+      </a>
+      <a href="{{ url_for('admin.applications') }}" class="{% if request.endpoint == 'admin.applications' %}active{% endif %}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10"></path><path d="M7 12h10"></path><path d="M7 17h10"></path><circle cx="4" cy="7" r="1"></circle><circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="17" r="1"></circle></svg></span><span>Applications</span></span>
+      </a>
+      <a href="{{ url_for('admin.resumes') }}" class="{% if request.endpoint == 'admin.resumes' %}active{% endif %}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V4"></path><path d="M4 19l16-5"></path><path d="M8 8h6"></path><path d="M8 12h4"></path></svg></span><span>Resumes</span></span>
+      </a>
+      <a href="{{ url_for('admin.categories') }}" class="{% if request.endpoint == 'admin.categories' %}active{% endif %}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path><path d="m10 4 4 4-4 4"></path></svg></span><span>Categories</span></span>
+      </a>
+      <a href="{{ url_for('admin.tags') }}" class="{% if request.endpoint == 'admin.tags' %}active{% endif %}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M3 12h18"></path><path d="M3 18h18"></path><path d="M8 6v12"></path></svg></span><span>Tags</span></span>
+      </a>
+      <a href="{{ url_for('admin.cv_templates') }}" class="{% if request.endpoint == 'admin.cv_templates' %}active{% endif %}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12l2 4v12H4V8l2-4z"></path><path d="M9 4v4h6V4"></path></svg></span><span>CV Templates</span></span>
+      </a>
+      <a href="{{ url_for('admin.logout') }}">
+        <span class="nav-link-main"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></span><span>Logout</span></span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
