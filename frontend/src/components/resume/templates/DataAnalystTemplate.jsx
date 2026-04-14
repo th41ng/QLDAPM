@@ -30,7 +30,7 @@ const styles = `
   .da-list { margin: 0; padding-left: 16px; display: grid; gap: 4px; }
 `;
 
-function text(value, fallback = "Chua cap nhat") {
+function text(value, fallback = "Chưa cập nhật") {
   const raw = String(value ?? "").trim();
   return raw || fallback;
 }
@@ -47,6 +47,7 @@ export default function DataAnalystTemplate({ data = {} }) {
   const skills = list(data.skills);
   const exp = list(data.experience);
   const edu = list(data.education);
+  const hasAdditionalInfo = Boolean(String(data.additional_info ?? "").trim());
 
   return (
     <>
@@ -54,25 +55,25 @@ export default function DataAnalystTemplate({ data = {} }) {
       <article className="cv-template cv-template--data-analyst">
         <header className="da-head">
           <div>
-            <h1>{text(data.full_name, "Tien Candidate")}</h1>
-            <p>{text(data.headline, "Data Analyst")}</p>
+            <h1>{text(data.full_name, "Ứng viên")}</h1>
+            <p>{text(data.headline, "Chuyên viên phân tích dữ liệu")}</p>
           </div>
           <span className="da-pill">METRICS</span>
         </header>
 
         <div className="da-kpi">
           <div>
-            <span>Experience</span>
+            <span>Kinh nghiệm</span>
             <strong>
-              {data.years_experience ? `${data.years_experience} nam` : "2 nam"}
+              {data.years_experience ? `${data.years_experience} năm` : "2 năm"}
             </strong>
           </div>
           <div>
-            <span>Location</span>
-            <strong>{text(data.desired_location, "HCM")}</strong>
+            <span>Khu vực</span>
+            <strong>{text(data.desired_location, "TP. Hồ Chí Minh")}</strong>
           </div>
           <div>
-            <span>Salary</span>
+            <span>Mức lương</span>
             <strong>{text(data.expected_salary, "18M")}</strong>
           </div>
         </div>
@@ -80,25 +81,31 @@ export default function DataAnalystTemplate({ data = {} }) {
         <div className="da-grid">
           <section className="da-col">
             <div className="da-sec">
-              <h2>Summary</h2>
+              <h2>Tóm tắt</h2>
               <p className="cv-pre-wrap">{text(data.summary)}</p>
             </div>
             <div className="da-sec">
-              <h2>Experience</h2>
+              <h2>Kinh nghiệm</h2>
               <ul className="da-list">
                 {(exp.length
                   ? exp
-                  : ["Build dashboards", "Track KPI", "Clean data"]
+                  : ["Xây dựng dashboard", "Theo dõi KPI", "Làm sạch dữ liệu"]
                 ).map((item, idx) => (
                   <li key={`${item}-${idx}`}>{item}</li>
                 ))}
               </ul>
             </div>
+            {hasAdditionalInfo ? (
+              <div className="da-sec">
+                <h2>Thông tin thêm</h2>
+                <p className="cv-pre-wrap">{text(data.additional_info)}</p>
+              </div>
+            ) : null}
           </section>
 
           <section className="da-col">
             <div className="da-sec">
-              <h2>Skills</h2>
+              <h2>Kỹ năng</h2>
               <ul className="da-list">
                 {(skills.length ? skills : ["SQL", "Python", "Power BI"]).map(
                   (item, idx) => (
@@ -108,7 +115,7 @@ export default function DataAnalystTemplate({ data = {} }) {
               </ul>
             </div>
             <div className="da-sec">
-              <h2>Education</h2>
+              <h2>Học vấn</h2>
               <ul className="da-list">
                 {(edu.length ? edu : [text(data.education)]).map(
                   (item, idx) => (

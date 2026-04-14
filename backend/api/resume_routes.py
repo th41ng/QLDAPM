@@ -44,6 +44,7 @@ def _structured_resume_payload(data: dict, user, template: CvTemplate | None = N
         "education": data.get("education"),
         "experience": data.get("experience"),
         "skills": data.get("skills"),
+        "additional_info": data.get("additional_info"),
         "template": {
             "id": template.id if template else data.get("template_id"),
             "name": template.name if template else data.get("template_name"),
@@ -99,6 +100,7 @@ def _render_resume_files(resume: Resume):
         "desired_location": structured.get("desired_location") or "",
         "summary": structured.get("summary") or "",
         "skills": structured.get("skills") or "",
+        "additional_info": structured.get("additional_info") or "",
         "experience": structured.get("experience") or "",
         "education": structured.get("education") or "",
         "template": structured.get("template") or {
@@ -354,6 +356,7 @@ def export_resume(resume_id):
         "desired_location": structured.get("desired_location") or "",
         "summary": structured.get("summary") or "",
         "skills": structured.get("skills") or "",
+        "additional_info": structured.get("additional_info") or "",
         "experience": structured.get("experience") or "",
         "education": structured.get("education") or "",
         "template": structured.get("template") or {

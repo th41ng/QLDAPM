@@ -28,6 +28,7 @@ const EMPTY_FORM = {
   education: "",
   experience: "",
   skills: "",
+  additional_info: "",
   is_primary: true,
 };
 
@@ -56,6 +57,7 @@ function buildFormFromSources(user, profile, template = null, resume = null) {
     education: structured.education || profile?.education || "",
     experience: structured.experience || profile?.experience || "",
     skills: Array.isArray(structured.skills) ? structured.skills.join(", ") : (structured.skills || ""),
+    additional_info: structured.additional_info || "",
     is_primary: resume ? Boolean(resume.is_primary) : true,
   };
 }
@@ -85,6 +87,7 @@ function buildFormFromResume(user, profile, resume, template = null) {
     education: structured.education || profile?.education || "",
     experience: structured.experience || profile?.experience || "",
     skills: Array.isArray(structured.skills) ? structured.skills.join(", ") : (structured.skills || ""),
+    additional_info: structured.additional_info || "",
     is_primary: Boolean(resume?.is_primary),
   };
 }
@@ -254,6 +257,7 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
         education: form.education,
         experience: form.experience,
         skills: form.skills,
+        additional_info: form.additional_info,
         template_id: template?.id || null,
         template_name: template?.name || form.template_name,
         template_slug: template?.slug || form.template_slug,
@@ -276,6 +280,7 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
           education: form.education,
           experience: form.experience,
           skills: form.skills,
+          additional_info: form.additional_info,
           template: {
             id: template?.id || null,
             name: template?.name || form.template_name,
@@ -376,7 +381,7 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
               <div>
                 <span className="eyebrow">Mẫu đã chọn</span>
                 <h2 className="rw-heading-2xl">{selectedTemplate?.name || form.template_name || "Mẫu CV"}</h2>
-                <p className="rw-muted-sm">{selectedTemplate?.summary || selectedTemplate?.description || "Template nay se duoc dung de tao CV realtime."}</p>
+                <p className="rw-muted-sm">{selectedTemplate?.summary || selectedTemplate?.description || "Template này sẽ được dùng để tạo CV realtime."}</p>
               </div>
               <div className="candidate-create-selected-actions">
                 <button
@@ -387,7 +392,7 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
                     setEditorModalOpen(true);
                   }}
                 >
-                  Mo trinh sua CV
+                  Mở trình chỉnh sửa CV
                 </button>
                 <button
                   type="button"
@@ -418,12 +423,12 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
           <div className="rw-modal candidate-editor-modal">
             <div className="rw-modal-head">
               <div>
-                <p className="rw-modal-kicker">Buoc 2 + Buoc 3</p>
-                <h3 className="rw-heading-2xl">Chinh sua va xem truoc trong cung mot modal</h3>
-                <p className="rw-modal-subtitle">Mau: {selectedTemplate?.name || form.template_name || "Chua chon"}</p>
+                <p className="rw-modal-kicker">Bước 2 + Bước 3</p>
+                <h3 className="rw-heading-2xl">Chỉnh sửa và xem trước trong cùng một modal</h3>
+                <p className="rw-modal-subtitle">Mẫu: {selectedTemplate?.name || form.template_name || "Chưa chọn"}</p>
               </div>
               <button type="button" className="rw-btn-close" onClick={() => setEditorModalOpen(false)}>
-                Dong
+                Đóng
               </button>
             </div>
 
@@ -446,8 +451,8 @@ export default function ResumeBuilderPage({ defaultTab = "create" }) {
               <section className="candidate-editor-preview-pane" id="cv-live-preview">
                 <div className="rw-flex-between candidate-create-section-head">
                   <div>
-                    <h2 className="rw-heading-2xl">Xem truoc CV that</h2>
-                    <p className="rw-muted-sm">Noi dung thay doi realtime theo form ben trai.</p>
+                    <h2 className="rw-heading-2xl">Xem trước CV thật</h2>
+                    <p className="rw-muted-sm">Nội dung thay đổi realtime theo form bên trái.</p>
                   </div>
                   <span className="rw-badge rw-badge-green">Live CV</span>
                 </div>

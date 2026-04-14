@@ -28,7 +28,7 @@ const styles = `
   .pd-skills span { border-radius: 999px; background: #e2e8f0; color: #1e293b; font-size: 11px; padding: 4px 8px; }
 `;
 
-function text(value, fallback = "Chua cap nhat") {
+function text(value, fallback = "Chưa cập nhật") {
   const raw = String(value ?? "").trim();
   return raw || fallback;
 }
@@ -47,33 +47,36 @@ export default function ProductDesignerTemplate({ data = {} }) {
     .split(/\n{2,}/)
     .map((row) => row.trim())
     .filter(Boolean);
+  const hasAdditionalInfo = Boolean(String(data.additional_info ?? "").trim());
 
   return (
     <>
       <style>{styles}</style>
       <article className="cv-template cv-template--product-designer">
         <header className="pd-head">
-          <h1>{text(data.full_name, "Tien Candidate")}</h1>
-          <p className="pd-role">{text(data.headline, "Product Designer")}</p>
+          <h1>{text(data.full_name, "Ứng viên")}</h1>
+          <p className="pd-role">
+            {text(data.headline, "Nhà thiết kế sản phẩm")}
+          </p>
           <div className="pd-meta">
             <span>{text(data.email, "email@domain.com")}</span>
             <span>{text(data.phone, "0900 000 003")}</span>
-            <span>{text(data.desired_location, "Ho Chi Minh")}</span>
+            <span>{text(data.desired_location, "TP. Hồ Chí Minh")}</span>
           </div>
         </header>
 
         <div className="pd-grid">
           <main className="pd-main">
             <section className="pd-sec">
-              <h2>Summary</h2>
+              <h2>Tóm tắt</h2>
               <p className="cv-pre-wrap">{text(data.summary)}</p>
             </section>
 
             <section className="pd-sec">
-              <h2>Case Studies</h2>
+              <h2>Dự án tiêu biểu</h2>
               {experienceRows.length ? (
                 <div className="pd-project">
-                  <strong>Featured project</strong>
+                  <strong>Dự án nổi bật</strong>
                   <p className="cv-pre-wrap">{experienceRows[0]}</p>
                 </div>
               ) : (
@@ -82,18 +85,25 @@ export default function ProductDesignerTemplate({ data = {} }) {
             </section>
 
             <section className="pd-sec">
-              <h2>Experience</h2>
+              <h2>Kinh nghiệm</h2>
               <p className="cv-pre-wrap">{text(data.experience)}</p>
             </section>
+
+            {hasAdditionalInfo ? (
+              <section className="pd-sec">
+                <h2>Thông tin thêm</h2>
+                <p className="cv-pre-wrap">{text(data.additional_info)}</p>
+              </section>
+            ) : null}
           </main>
 
           <aside className="pd-side">
             <section className="pd-sec">
-              <h2>Skills</h2>
+              <h2>Kỹ năng</h2>
               <div className="pd-skills">
                 {(skills.length
                   ? skills
-                  : ["Figma", "UX", "Design systems"]
+                  : ["Figma", "UX", "Design System"]
                 ).map((skill) => (
                   <span key={skill}>{skill}</span>
                 ))}
@@ -101,7 +111,7 @@ export default function ProductDesignerTemplate({ data = {} }) {
             </section>
 
             <section className="pd-sec">
-              <h2>Education</h2>
+              <h2>Học vấn</h2>
               <p className="cv-pre-wrap">{text(data.education)}</p>
             </section>
           </aside>

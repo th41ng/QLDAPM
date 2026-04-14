@@ -25,7 +25,7 @@ const styles = `
   .mk-box { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fff; }
 `;
 
-function text(value, fallback = "Chua cap nhat") {
+function text(value, fallback = "Chưa cập nhật") {
   const raw = String(value ?? "").trim();
   return raw || fallback;
 }
@@ -40,46 +40,54 @@ function list(value) {
 
 export default function MarketingProTemplate({ data = {} }) {
   const skills = list(data.skills);
+  const hasAdditionalInfo = Boolean(String(data.additional_info ?? "").trim());
 
   return (
     <>
       <style>{styles}</style>
       <article className="cv-template cv-template--marketing-pro">
         <header className="mk-head">
-          <h1>{text(data.full_name, "Tien Candidate")}</h1>
-          <p>{text(data.headline, "Marketing Specialist")}</p>
+          <h1>{text(data.full_name, "Ứng viên")}</h1>
+          <p>{text(data.headline, "Chuyên viên marketing")}</p>
           <div className="mk-tag-row">
             <span>{text(data.email, "email@domain.com")}</span>
             <span>{text(data.phone, "0900 000 003")}</span>
-            <span>{text(data.desired_location, "Ho Chi Minh")}</span>
+            <span>{text(data.desired_location, "TP. Hồ Chí Minh")}</span>
           </div>
         </header>
 
         <div className="mk-body">
           <section className="mk-sec">
-            <h2>Brand Story</h2>
+            <h2>Tóm tắt cá nhân</h2>
             <p className="cv-pre-wrap">{text(data.summary)}</p>
           </section>
 
           <section className="mk-sec">
-            <h2>Campaign Highlights</h2>
+            <h2>Chiến dịch nổi bật</h2>
             <div className="mk-campaign">
-              <strong>Main campaign</strong>
+              <strong>Chiến dịch chính</strong>
               <p className="cv-pre-wrap">{text(data.experience)}</p>
             </div>
           </section>
 
+          {hasAdditionalInfo ? (
+            <section className="mk-sec">
+              <h2>Thông tin thêm</h2>
+              <p className="cv-pre-wrap">{text(data.additional_info)}</p>
+            </section>
+          ) : null}
+
           <div className="mk-grid">
             <section className="mk-sec mk-box">
-              <h2>Channels</h2>
+              <h2>Kênh triển khai</h2>
               <p className="cv-pre-wrap">
                 {skills.length
                   ? skills.join(", ")
-                  : "SEO, Social, Performance Ads, Email"}
+                  : "SEO, Social, Quảng cáo hiệu suất, Email"}
               </p>
             </section>
             <section className="mk-sec mk-box">
-              <h2>Education</h2>
+              <h2>Học vấn</h2>
               <p className="cv-pre-wrap">{text(data.education)}</p>
             </section>
           </div>

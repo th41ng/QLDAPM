@@ -108,6 +108,9 @@
         <Field label="Học vấn">
           <textarea rows="5" value={values.education} onChange={(event) => onChange("education", event.target.value)} placeholder="Đại học..., chuyên ngành..., chứng chỉ..." />
         </Field>
+        <Field label="Thông tin thêm">
+          <textarea rows="4" value={values.additional_info || ""} onChange={(event) => onChange("additional_info", event.target.value)} placeholder="Link portfolio, github, chứng chỉ, giải thưởng hoặc ghi chú thêm..." />
+        </Field>
       </section>
 
       <section className="rw-card rw-form-section-card">

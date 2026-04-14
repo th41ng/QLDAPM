@@ -153,7 +153,7 @@ export default function ResumeTemplateGrid({ templates, onUseTemplate, selectedS
                       className={selected ? "rw-btn-outline-lg rw-btn-outline-lg--selected rw-template-action-btn" : "rw-btn-outline-lg rw-template-action-btn"}
                       onClick={() => onUseTemplate(template)}
                     >
-                      {selected ? "Da chon" : "Chon mau nay"}
+                      {selected ? "Đã chọn" : "Chọn mẫu này"}
                     </button>
                   </div>
                 </div>

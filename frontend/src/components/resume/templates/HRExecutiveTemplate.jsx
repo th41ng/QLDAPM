@@ -20,7 +20,7 @@ const styles = `
   .hr-card { border: 1px solid #fbcfe8; border-radius: 10px; background: #fff; padding: 10px; }
 `;
 
-function text(value, fallback = "Chua cap nhat") {
+function text(value, fallback = "Chưa cập nhật") {
   const raw = String(value ?? "").trim();
   return raw || fallback;
 }
@@ -36,72 +36,81 @@ function list(value) {
 export default function HRExecutiveTemplate({ data = {} }) {
   const skills = list(data.skills);
   const exp = list(data.experience);
+  const hasAdditionalInfo = Boolean(String(data.additional_info ?? "").trim());
 
   return (
     <>
       <style>{styles}</style>
       <article className="cv-template cv-template--hr-executive">
         <header className="hr-head">
-          <h1>{text(data.full_name, "Tien Candidate")}</h1>
-          <p>{text(data.headline, "HR Executive")}</p>
+          <h1>{text(data.full_name, "Ứng viên")}</h1>
+          <p>{text(data.headline, "Chuyên viên nhân sự")}</p>
           <div className="hr-contact">
             <span>{text(data.email, "email@domain.com")}</span>
             <span>{text(data.phone, "0900 000 003")}</span>
-            <span>{text(data.address, "Ho Chi Minh")}</span>
+            <span>{text(data.address, "TP. Hồ Chí Minh")}</span>
           </div>
         </header>
 
         <div className="hr-wrap">
           <main className="hr-main">
             <section className="hr-sec">
-              <h2>Executive Summary</h2>
+              <h2>Tóm tắt chuyên môn</h2>
               <p className="cv-pre-wrap">{text(data.summary)}</p>
             </section>
             <section className="hr-sec">
-              <h2>Career Timeline</h2>
+              <h2>Hành trình sự nghiệp</h2>
               <ul className="hr-timeline">
                 {(exp.length
                   ? exp
                   : [
-                      "Lead talent acquisition",
-                      "Develop retention program",
-                      "Manage HR operations",
+                      "Dẫn dắt tuyển dụng nhân sự",
+                      "Phát triển chương trình giữ chân nhân sự",
+                      "Vận hành hoạt động nhân sự",
                     ]
                 ).map((item, idx) => (
                   <li key={`${item}-${idx}`}>{item}</li>
                 ))}
               </ul>
             </section>
+            {hasAdditionalInfo ? (
+              <section className="hr-sec">
+                <h2>Thông tin thêm</h2>
+                <div className="hr-card">
+                  <p className="cv-pre-wrap">{text(data.additional_info)}</p>
+                </div>
+              </section>
+            ) : null}
           </main>
 
           <aside className="hr-side">
             <section className="hr-sec">
-              <h2>Leadership Focus</h2>
+              <h2>Định hướng vai trò</h2>
               <div className="hr-card">
                 <p className="cv-pre-wrap">
-                  {text(data.current_title, "People Operations Lead")}
+                  {text(data.current_title, "Trưởng nhóm vận hành nhân sự")}
                 </p>
                 <p
                   style={{ margin: "8px 0 0", fontSize: 12, color: "#9ca3af" }}
                 >
                   {data.years_experience
-                    ? `${data.years_experience} nam kinh nghiem`
-                    : "Senior profile"}
+                    ? `${data.years_experience} năm kinh nghiệm`
+                    : "Hồ sơ chuyên môn cao"}
                 </p>
               </div>
             </section>
             <section className="hr-sec">
-              <h2>Core Skills</h2>
+              <h2>Kỹ năng cốt lõi</h2>
               <div className="hr-card">
                 <p className="cv-pre-wrap">
                   {skills.length
                     ? skills.join(", ")
-                    : "Recruitment, Labor law, Training, Performance"}
+                    : "Tuyển dụng, Luật lao động, Đào tạo, Đánh giá hiệu suất"}
                 </p>
               </div>
             </section>
             <section className="hr-sec">
-              <h2>Education</h2>
+              <h2>Học vấn</h2>
               <div className="hr-card">
                 <p className="cv-pre-wrap">{text(data.education)}</p>
               </div>

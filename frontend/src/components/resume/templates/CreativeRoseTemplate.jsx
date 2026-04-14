@@ -266,6 +266,7 @@ export default function CreativeRoseTemplate({ data = {} }) {
     { label: "Khu vực", value: data.desired_location },
     { label: "Mức lương", value: data.desired_salary || data.expected_salary },
   ].filter((item) => item.value);
+  const hasAdditionalInfo = Boolean(String(data.additional_info ?? "").trim());
 
   return (
     <>
@@ -273,7 +274,7 @@ export default function CreativeRoseTemplate({ data = {} }) {
       <article className="cv-template cv-template--creative-rose">
         <header className="cv-creative-header">
           <div>
-            <p className="cv-creative-kicker">Curriculum Vitae · 2025</p>
+            <p className="cv-creative-kicker">Hồ sơ ứng viên · 2025</p>
             <h1>{text(data.full_name, "Họ và tên")}</h1>
             <p className="cv-creative-role">
               {text(data.headline, "Vị trí ứng tuyển")}
@@ -356,7 +357,7 @@ export default function CreativeRoseTemplate({ data = {} }) {
                       color: "#999",
                     }}
                   >
-                    Github:{" "}
+                    GitHub:{" "}
                     <a
                       href={data.github}
                       className="cv-link"
@@ -369,6 +370,13 @@ export default function CreativeRoseTemplate({ data = {} }) {
                 )}
               </section>
             )}
+
+            {hasAdditionalInfo ? (
+              <section className="cv-creative-section">
+                <h2 className="cv-creative-section-title">Thông tin thêm</h2>
+                <p className="cv-pre-wrap">{text(data.additional_info)}</p>
+              </section>
+            ) : null}
           </main>
 
           <aside className="cv-creative-sidebar">
@@ -400,7 +408,7 @@ export default function CreativeRoseTemplate({ data = {} }) {
             <section className="cv-creative-section">
               <h2 className="cv-creative-section-title">Chức danh</h2>
               <p style={{ margin: 0, fontSize: 12.5, color: "#555" }}>
-                {text(data.current_title, "Junior Developer")}
+                {text(data.current_title, "Nhân viên phát triển phần mềm")}
               </p>
               {(data.years_of_experience || data.years_experience) && (
                 <p style={{ margin: "4px 0 0", fontSize: 12, color: "#999" }}>

@@ -1,4 +1,4 @@
-function getText(value, fallback = "Chua cap nhat") {
+function getText(value, fallback = "Chưa cập nhật") {
   const text = String(value ?? "")
     .replace(/\r\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
@@ -27,30 +27,31 @@ export default function ModernBlueTemplate({ data = {} }) {
   const skills = getList(data.skills);
   const expBlocks = getParagraphs(data.experience);
   const eduBlocks = getParagraphs(data.education);
+  const hasAdditionalInfo = Boolean(String(data.additional_info ?? "").trim());
   const contact = [
-    { label: "Ngay sinh", value: data.dob },
-    { label: "Gioi tinh", value: data.gender },
-    { label: "So dien thoai", value: data.phone },
+    { label: "Ngày sinh", value: data.dob },
+    { label: "Giới tính", value: data.gender },
+    { label: "Số điện thoại", value: data.phone },
     { label: "Email", value: data.email },
-    { label: "Dia chi", value: data.address },
+    { label: "Địa chỉ", value: data.address },
   ];
   const goals = [
-    { label: "Vi tri hien tai", value: data.current_title },
+    { label: "Vị trí hiện tại", value: data.current_title },
     {
-      label: "So nam kinh nghiem",
+      label: "Số năm kinh nghiệm",
       value: data.years_experience
-        ? `${data.years_experience} nam`
-        : "Chua cap nhat",
+        ? `${data.years_experience} năm`
+        : "Chưa cập nhật",
     },
-    { label: "Muc luong mong muon", value: data.expected_salary },
-    { label: "Khu vuc mong muon", value: data.desired_location },
+    { label: "Mức lương mong muốn", value: data.expected_salary },
+    { label: "Khu vực mong muốn", value: data.desired_location },
   ];
 
   return (
     <article className="cv-template cv-template--modern-blue">
       <div className="cv-modern-topline">
         <span>Modern Blue</span>
-        <span>{getText(data.current_title, "Candidate Profile")}</span>
+        <span>{getText(data.current_title, "Hồ sơ ứng viên")}</span>
       </div>
 
       <header className="cv-modern-header">
@@ -58,9 +59,9 @@ export default function ModernBlueTemplate({ data = {} }) {
           <div className="cv-modern-avatar" aria-hidden="true" />
         </div>
         <div className="cv-modern-header-main">
-          <h1>{getText(data.full_name, "Ho va ten")}</h1>
+          <h1>{getText(data.full_name, "Họ và tên")}</h1>
           <p className="cv-modern-headline">
-            {getText(data.headline, "Vi tri ung tuyen")}
+            {getText(data.headline, "Vị trí ứng tuyển")}
           </p>
           <div className="cv-modern-contact-grid">
             {contact.map((item) => (
@@ -71,12 +72,12 @@ export default function ModernBlueTemplate({ data = {} }) {
           </div>
 
           <div className="cv-modern-chip-row">
-            <span>{getText(data.expected_salary, "Luong thuong luong")}</span>
-            <span>{getText(data.desired_location, "Linh hoat dia diem")}</span>
+            <span>{getText(data.expected_salary, "Lương thỏa thuận")}</span>
+            <span>{getText(data.desired_location, "Linh hoạt địa điểm")}</span>
             <span>
               {data.years_experience
-                ? `${data.years_experience} nam kinh nghiem`
-                : "Dang cap nhat kinh nghiem"}
+                ? `${data.years_experience} năm kinh nghiệm`
+                : "Đang cập nhật kinh nghiệm"}
             </span>
           </div>
         </div>
@@ -84,10 +85,10 @@ export default function ModernBlueTemplate({ data = {} }) {
 
       <div className="cv-modern-grid">
         <aside className="cv-modern-aside">
-          <h3>Muc tieu nghe nghiep</h3>
+          <h3>Mục tiêu nghề nghiệp</h3>
           <p className="cv-pre-wrap">{getText(data.summary)}</p>
 
-          <h3>Thong tin bo sung</h3>
+          <h3>Thông tin bổ sung</h3>
           <div className="cv-modern-meta-list">
             {goals.map((item) => (
               <p key={item.label}>
@@ -96,7 +97,7 @@ export default function ModernBlueTemplate({ data = {} }) {
             ))}
           </div>
 
-          <h3>Ky nang</h3>
+          <h3>Kỹ năng</h3>
           {skills.length ? (
             <ul className="cv-skill-list">
               {skills.map((skill) => (
@@ -104,13 +105,13 @@ export default function ModernBlueTemplate({ data = {} }) {
               ))}
             </ul>
           ) : (
-            <p>Chua cap nhat</p>
+            <p>Chưa cập nhật</p>
           )}
         </aside>
 
         <section className="cv-modern-main">
           <section className="cv-modern-block">
-            <h2>Kinh nghiem lam viec</h2>
+            <h2>Kinh nghiệm làm việc</h2>
             {expBlocks.length ? (
               <div className="cv-modern-stack">
                 {expBlocks.map((block, index) => (
@@ -126,7 +127,7 @@ export default function ModernBlueTemplate({ data = {} }) {
           </section>
 
           <section className="cv-modern-block">
-            <h2>Hoc van</h2>
+            <h2>Học vấn</h2>
             {eduBlocks.length ? (
               <div className="cv-modern-stack">
                 {eduBlocks.map((block, index) => (
@@ -141,13 +142,12 @@ export default function ModernBlueTemplate({ data = {} }) {
             )}
           </section>
 
-          <section className="cv-modern-block">
-            <h2>Thong tin them</h2>
-            <p>
-              CV duoc tao tu template Modern Blue. Ban co the tiep tuc cap nhat
-              noi dung de phu hop voi vi tri ung tuyen.
-            </p>
-          </section>
+          {hasAdditionalInfo ? (
+            <section className="cv-modern-block">
+              <h2>Thông tin thêm</h2>
+              <p className="cv-pre-wrap">{getText(data.additional_info)}</p>
+            </section>
+          ) : null}
         </section>
       </div>
     </article>

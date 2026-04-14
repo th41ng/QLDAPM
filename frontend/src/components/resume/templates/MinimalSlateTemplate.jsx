@@ -219,7 +219,7 @@ const styles = `
   }
 `;
 
-function text(value, fallback = "Chua cap nhat") {
+function text(value, fallback = "Chưa cập nhật") {
   const raw = String(value ?? "").trim();
   return raw || fallback;
 }
@@ -248,14 +248,15 @@ export default function MinimalSlateTemplate({ data = {} }) {
     data.desired_location || data.address,
     data.github,
   ].filter(Boolean);
+  const hasAdditionalInfo = Boolean(String(data.additional_info ?? "").trim());
 
   return (
     <>
       <style>{styles}</style>
       <article className="cv-template cv-template--minimal-slate">
         <header className="cv-minimal-header">
-          <h1>{text(data.full_name, "Ho va ten")}</h1>
-          <p>{text(data.headline, "Vi tri ung tuyen")}</p>
+          <h1>{text(data.full_name, "Họ và tên")}</h1>
+          <p>{text(data.headline, "Vị trí ứng tuyển")}</p>
         </header>
 
         <div className="cv-minimal-meta">
@@ -277,13 +278,13 @@ export default function MinimalSlateTemplate({ data = {} }) {
 
         {data.summary && (
           <section className="cv-minimal-section">
-            <h2>Tom tat</h2>
+            <h2>Tóm tắt</h2>
             <p className="cv-pre-wrap">{text(data.summary)}</p>
           </section>
         )}
 
         <section className="cv-minimal-section">
-          <h2>Kinh nghiem</h2>
+          <h2>Kinh nghiệm</h2>
           <div>
             {experiences ? (
               experiences.map((exp, idx) => (
@@ -317,7 +318,7 @@ export default function MinimalSlateTemplate({ data = {} }) {
 
         {(projects || data.project_text) && (
           <section className="cv-minimal-section">
-            <h2>Du an</h2>
+            <h2>Dự án</h2>
             <div>
               {projects ? (
                 projects.map((proj, idx) => (
@@ -339,7 +340,7 @@ export default function MinimalSlateTemplate({ data = {} }) {
         )}
 
         <section className="cv-minimal-section">
-          <h2>Hoc van</h2>
+          <h2>Học vấn</h2>
           <div>
             {educations ? (
               educations.map((edu, idx) => (
@@ -358,7 +359,7 @@ export default function MinimalSlateTemplate({ data = {} }) {
         </section>
 
         <section className="cv-minimal-section">
-          <h2>Ky nang</h2>
+          <h2>Kỹ năng</h2>
           <div>
             {skills.length ? (
               <div className="cv-minimal-skills-grid">
@@ -369,10 +370,17 @@ export default function MinimalSlateTemplate({ data = {} }) {
                 ))}
               </div>
             ) : (
-              <p>Chua cap nhat</p>
+              <p>Chưa cập nhật</p>
             )}
           </div>
         </section>
+
+        {hasAdditionalInfo ? (
+          <section className="cv-minimal-section">
+            <h2>Thông tin thêm</h2>
+            <p className="cv-pre-wrap">{text(data.additional_info)}</p>
+          </section>
+        ) : null}
       </article>
     </>
   );
