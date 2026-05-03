@@ -26,9 +26,28 @@ function buildUrl(path) {
   return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-async function parseResponse(response) {
+async function parseResponse(response, options = {}) {
   const contentType = response.headers.get("content-type") || "";
-
+ 
+  // Handle blob/file responses (e.g., PDF downloads)
+  if (options.responseType === "blob" || contentType.includes("application/pdf") || contentType.includes("application/octet-stream")) {
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || `Request failed with status ${response.status}`);
+    }
+    return await response.blob();
+  }
+ 
+  // Handle HTML responses (e.g., preview)
+  if (contentType.includes("text/html")) {
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || `Request failed with status ${response.status}`);
+    }
+    return await response.text();
+  }
+ 
+  // Handle JSON responses
   if (!contentType.includes("application/json")) {
     const text = await response.text();
     if (!response.ok) {
@@ -36,13 +55,13 @@ async function parseResponse(response) {
     }
     return text;
   }
-
+ 
   const payload = await response.json();
-
+ 
   if (!response.ok || payload?.ok === false) {
     throw new Error(payload?.message || `Request failed with status ${response.status}`);
   }
-
+ 
   return payload?.data ?? payload;
 }
 
@@ -51,8 +70,39 @@ export async function apiRequest(path, options = {}) {
     ...options,
     headers: buildHeaders(options.headers, options.body, options.auth !== false),
   });
+ 
+  return parseResponse(response, options);  // ← Thêm options
+}
 
-  return parseResponse(response);
+export async function apiDownload(path, options = {}) {
+  const response = await fetch(buildUrl(path), {
+    ...options,
+    headers: buildHeaders(options.headers, options.body, options.auth !== false),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Không thể tải file (${response.status}).`);
+  }
+
+  return {
+    blob: await response.blob(),
+    filename: filenameFromContentDisposition(response.headers.get("content-disposition"), options.filename || "download"),
+  };
+}
+
+function filenameFromContentDisposition(headerValue, fallback) {
+  if (!headerValue) return fallback;
+  const utfMatch = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utfMatch?.[1]) {
+    try {
+      return decodeURIComponent(utfMatch[1]);
+    } catch {
+      return fallback;
+    }
+  }
+  const plainMatch = headerValue.match(/filename="?([^";]+)"?/i);
+  return plainMatch?.[1] || fallback;
 }
 
 export function setAuthSession(token, user) {

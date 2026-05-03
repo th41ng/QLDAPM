@@ -1,0 +1,40 @@
+# fly.toml app configuration file generated for qlda-backend
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+
+app = "qlda-backend"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  FLASK_ENV = "production"
+  EMBEDDING_WARMUP_ON_START = "false"
+  EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8080
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

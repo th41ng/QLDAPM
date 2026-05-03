@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import cloudinary
@@ -49,4 +50,29 @@ def upload_image(file_storage: Any, folder: str, public_id: str | None = None) -
         url=result.get("secure_url", ""),
         public_id=result.get("public_id", ""),
         resource_type=result.get("resource_type", "image"),
+    )
+
+
+def upload_file(file_source: Any, folder: str, public_id: str | None = None) -> UploadResult | None:
+    if file_source is None:
+        return None
+    if not init_cloudinary():
+        return None
+
+    options = {
+        "folder": folder,
+        "resource_type": "auto",
+        "overwrite": True,
+        "use_filename": True,
+        "unique_filename": True,
+    }
+    if public_id:
+        options["public_id"] = public_id
+
+    upload_target = str(file_source) if isinstance(file_source, Path) else file_source
+    result = cloudinary.uploader.upload(upload_target, **options)
+    return UploadResult(
+        url=result.get("secure_url", ""),
+        public_id=result.get("public_id", ""),
+        resource_type=result.get("resource_type", "raw"),
     )

@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 from ..core.extensions import db
 from ..core.security import hash_password, slugify, verify_password
 from ..core.services.storage_service import upload_image
-from ..models import Application, CandidateProfile, Category, Company, CvTemplate, JobPosting, Resume, Tag, User
+from ..models import Application, CandidateProfile, Category, Company, CvTemplate, JobPosting, Resume, Tag, User, job_tags
 
 admin_bp = Blueprint("admin", __name__, template_folder="../templates")
 
@@ -37,6 +37,7 @@ CHART_COLORS = {
     "accepted": "#059669",
     "rejected": "#dc2626",
 }
+CHART_PALETTE = ["#2458f2", "#0f766e", "#d97706", "#7c3aed", "#dc2626", "#0891b2", "#64748b"]
 
 
 def admin_required(fn):
@@ -155,17 +156,164 @@ def _delete_resume_files(resume):
 def _build_chart_rows(items):
     total = sum(item[2] for item in items) or 1
     rows = []
-    for key, label, count in items:
+    for index, (key, label, count) in enumerate(items):
         rows.append(
             {
                 "key": key,
                 "label": label,
                 "count": count,
                 "percent": round((count / total) * 100, 1),
-                "color": CHART_COLORS.get(key, "#2458f2"),
+                "color": CHART_COLORS.get(key, CHART_PALETTE[index % len(CHART_PALETTE)]),
             }
         )
     return rows
+
+
+def _build_donut_chart(rows):
+    total = sum(row["count"] for row in rows) or 1
+    segments = []
+    start = 0
+    for row in rows:
+        sweep = (row["count"] / total) * 360
+        end = start + sweep
+        segments.append(f"{row['color']} {start:.2f}deg {end:.2f}deg")
+        start = end
+    return {
+        "total": sum(row["count"] for row in rows),
+        "gradient": f"conic-gradient({', '.join(segments)})" if segments else "conic-gradient(#dbe4ff 0deg 360deg)",
+    }
+
+
+def _build_category_job_rows(limit=6):
+    rows = (
+        db.session.query(
+            Category.id,
+            Category.name,
+            func.count(func.distinct(JobPosting.id)).label("job_count"),
+        )
+        .outerjoin(Tag, Tag.category_id == Category.id)
+        .outerjoin(job_tags, job_tags.c.tag_id == Tag.id)
+        .outerjoin(JobPosting, JobPosting.id == job_tags.c.job_id)
+        .filter(Category.is_active.is_(True))
+        .group_by(Category.id, Category.name)
+        .order_by(func.count(func.distinct(JobPosting.id)).desc(), Category.name.asc())
+        .all()
+    )
+
+    items = [(f"category-{category_id}", name, int(job_count or 0)) for category_id, name, job_count in rows if int(job_count or 0) > 0]
+    if len(items) > limit:
+        visible = items[:limit]
+        remaining = sum(item[2] for item in items[limit:])
+        if remaining:
+            visible.append(("category-other", "Khac", remaining))
+        items = visible
+    return _build_chart_rows(items)
+
+
+def _build_tag_job_rows(limit=6):
+    rows = (
+        db.session.query(
+            Tag.id,
+            Tag.name,
+            func.count(func.distinct(job_tags.c.job_id)).label("job_count"),
+        )
+        .join(job_tags, job_tags.c.tag_id == Tag.id)
+        .group_by(Tag.id, Tag.name)
+        .order_by(func.count(func.distinct(job_tags.c.job_id)).desc(), Tag.name.asc())
+        .all()
+    )
+
+    items = [(f"tag-{tag_id}", name, int(job_count or 0)) for tag_id, name, job_count in rows if int(job_count or 0) > 0]
+    if len(items) > limit:
+        visible = items[:limit]
+        remaining = sum(item[2] for item in items[limit:])
+        if remaining:
+            visible.append(("tag-other", "Khac", remaining))
+        items = visible
+    return _build_chart_rows(items)
+
+
+def _build_experience_level_rows():
+    rows = (
+        db.session.query(
+            JobPosting.experience_level,
+            func.count(JobPosting.id).label("job_count"),
+        )
+        .group_by(JobPosting.experience_level)
+        .all()
+    )
+
+    items = [(level or "unknown", (level or "Unknown").title(), int(job_count or 0)) for level, job_count in rows if int(job_count or 0) > 0]
+    return _build_chart_rows(items)
+
+
+def _build_employment_type_rows():
+    rows = (
+        db.session.query(
+            JobPosting.employment_type,
+            func.count(JobPosting.id).label("job_count"),
+        )
+        .group_by(JobPosting.employment_type)
+        .all()
+    )
+
+    items = [(emp_type or "unknown", (emp_type or "Unknown").title(), int(job_count or 0)) for emp_type, job_count in rows if int(job_count or 0) > 0]
+    return _build_chart_rows(items)
+
+
+def _build_monthly_job_trend(months=6):
+    now = datetime.utcnow()
+    month_starts = []
+    for offset in range(months - 1, -1, -1):
+        month = now.month - offset
+        year = now.year
+        while month <= 0:
+            month += 12
+            year -= 1
+        month_starts.append(datetime(year, month, 1))
+
+    counts = {(item.year, item.month): 0 for item in month_starts}
+    jobs = JobPosting.query.filter(JobPosting.created_at >= month_starts[0]).all()
+    for job in jobs:
+        if not job.created_at:
+            continue
+        key = (job.created_at.year, job.created_at.month)
+        if key in counts:
+            counts[key] += 1
+
+    rows = [
+        {
+            "label": item.strftime("%m/%Y"),
+            "count": counts[(item.year, item.month)],
+        }
+        for item in month_starts
+    ]
+    max_count = max((row["count"] for row in rows), default=0) or 1
+    width = 460
+    height = 220
+    padding_x = 28
+    padding_y = 24
+    usable_width = width - (padding_x * 2)
+    usable_height = height - (padding_y * 2)
+    point_step = usable_width / max(len(rows) - 1, 1)
+
+    points = []
+    for index, row in enumerate(rows):
+        x = padding_x + index * point_step
+        y = height - padding_y - ((row["count"] / max_count) * usable_height)
+        row["x"] = round(x, 2)
+        row["y"] = round(y, 2)
+        points.append(f"{row['x']},{row['y']}")
+
+    return {
+        "rows": rows,
+        "points": " ".join(points),
+        "width": width,
+        "height": height,
+        "padding_x": padding_x,
+        "padding_y": padding_y,
+        "max_count": max_count,
+    }
 
 
 @admin_bp.route("/login", methods=["GET", "POST"])
@@ -258,6 +406,10 @@ def dashboard():
         }
         for _, name, count in company_job_counts
     ]
+    tag_job_distribution = _build_tag_job_rows()
+    experience_level_distribution = _build_experience_level_rows()
+    employment_type_distribution = _build_employment_type_rows()
+    monthly_job_trend = _build_monthly_job_trend()
     return render_template(
         "admin/dashboard.html",
         stats=stats,
@@ -266,10 +418,18 @@ def dashboard():
         recent_apps=recent_apps,
         recent_templates=recent_templates,
         charts={
+            "tag_job_distribution": tag_job_distribution,
+            "tag_job_donut": _build_donut_chart(tag_job_distribution),
+            "experience_level_distribution": experience_level_distribution,
+            "experience_level_donut": _build_donut_chart(experience_level_distribution),
+            "employment_type_distribution": employment_type_distribution,
+            "employment_type_donut": _build_donut_chart(employment_type_distribution),
+            "monthly_job_trend": monthly_job_trend,
             "users_by_role": users_by_role,
             "users_by_status": users_by_status,
             "jobs_by_status": jobs_by_status,
             "applications_by_status": applications_by_status,
+            "applications_by_status_donut": _build_donut_chart(applications_by_status),
             "top_companies": top_companies,
         },
     )

@@ -14,13 +14,6 @@ def list_published_jobs():
     return get_job_query().filter(JobPosting.status == "published").order_by(JobPosting.is_featured.desc(), JobPosting.created_at.desc()).all()
 
 
-def list_jobs_for_recruiter(recruiter_user_id, status=None):
-    query = get_job_query().filter(JobPosting.recruiter_user_id == recruiter_user_id)
-    if status:
-        query = query.filter(JobPosting.status == status)
-    return query.order_by(JobPosting.created_at.desc()).all()
-
-
 def list_jobs(filters=None):
     filters = filters or {}
     query = get_job_query().filter(JobPosting.status == filters.get("status", "published"))
@@ -57,6 +50,13 @@ def get_job_by_id(job_id):
     return get_job_query().filter_by(id=job_id).first()
 
 
+def list_jobs_for_recruiter(recruiter_user_id, status=None):
+    query = get_job_query().filter(JobPosting.recruiter_user_id == recruiter_user_id)
+    if status:
+        query = query.filter(JobPosting.status == status)
+    return query.order_by(JobPosting.created_at.desc()).all()
+
+
 def create_job_record(user_id, company_id, data):
     title = data.get("title", "").strip()
     slug = slugify(data.get("slug") or title)
@@ -89,10 +89,10 @@ def create_job_record(user_id, company_id, data):
     return job
 
 
-def delete_job_record(job):
-    return job
-
-
 def apply_tags(job, tag_ids):
     if tag_ids:
         job.tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
+
+
+def delete_job_record(job):
+    return job

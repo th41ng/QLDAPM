@@ -1,4 +1,4 @@
-import { apiRequest } from "../lib/api";
+import { apiDownload, apiRequest } from "../lib/api";
 
 export const api = {
   auth: {
@@ -50,8 +50,16 @@ export const api = {
       }),
   },
   jobs: {
-    list: (params = "") => apiRequest(`/jobs${params}`, { auth: false }),
-    mine: (params = "") => apiRequest(`/jobs/mine${params}`),
+    list: (params = {}) => {
+      if (typeof params === "string") return apiRequest(`/jobs${params}`, { auth: false });
+      const p = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") p.set(k, String(v));
+      });
+      return apiRequest(`/jobs?${p.toString()}`, { auth: false });
+    },
+    filterOptions: () => apiRequest("/jobs/filter-options", { auth: false }),
+    mine: (params = "") => apiRequest(`/jobs/mine${params}`).then((d) => d?.items ?? (Array.isArray(d) ? d : [])),
     detail: (id) => apiRequest(`/jobs/${id}`, { auth: false }),
     screen: (id) => apiRequest(`/jobs/${id}/screen`),
     create: (payload) => apiRequest("/jobs", { method: "POST", body: JSON.stringify(payload) }),
@@ -80,6 +88,8 @@ export const api = {
         body: JSON.stringify(payload),
       }),
     upload: (formData) => apiRequest("/resumes/upload", { method: "POST", body: formData }),
+    parsePreview: (formData) => apiRequest("/resumes/parse-preview", { method: "POST", body: formData }),
+    parseAndCreate: (formData) => apiRequest("/resumes/parse-and-create", { method: "POST", body: formData }),
     update: (id, payload) =>
       apiRequest(`/resumes/${id}`, {
         method: "PUT",
@@ -94,11 +104,37 @@ export const api = {
     getProfile: () => apiRequest("/profiles/me"),
     exportUrl: (resumeId, format = "pdf") =>
       `${import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5001/api"}/resumes/${resumeId}/export?format=${format}`,
+    exportFile: (resumeId, format = "pdf", filename = `resume-${resumeId}.${format}`) =>
+      apiDownload(`/resumes/${resumeId}/export?format=${format}`, {
+        filename,
+      }),
+    originalFileUrl: (resumeId) =>
+      `${import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5001/api"}/resumes/${resumeId}/export?format=original`,
     recommendations: () => apiRequest("/resumes/recommendations"),
+    preview: (payload) =>
+    apiRequest("/resumes/preview", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+    generatePdf: (payload) =>
+    apiRequest("/resumes/generate-pdf", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      responseType: "blob",  // ← Important!
+    }),
   },
   companies: {
     me: () => apiRequest("/companies/me"),
-    featured: () => apiRequest("/companies/featured", { auth: false }),
+    followed: () => apiRequest("/companies/follows"),
+    follow: (companyId) => apiRequest(`/companies/${companyId}/follow`, { method: "PUT" }),
+    unfollow: (companyId) => apiRequest(`/companies/${companyId}/follow`, { method: "DELETE" }),
+    featured: ({ q = "", page = 1, perPage = 6 } = {}) => {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      params.set("page", String(page));
+      params.set("per_page", String(perPage));
+      return apiRequest(`/companies/featured?${params.toString()}`, { auth: false });
+    },
     updateMe: (payload) =>
       apiRequest("/companies/me", {
         method: "PUT",
@@ -111,13 +147,95 @@ export const api = {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    myApplications: () => apiRequest("/applications/mine"),
-    recruiterApplications: () => apiRequest("/applications/recruiter"),
+    checkForJob: (jobId) => apiRequest(`/applications/check?job_id=${jobId}`),
+    myApplications: () => apiRequest("/applications/mine").then((d) => d?.items ?? (Array.isArray(d) ? d : [])),
+    recruiterApplications: () => apiRequest("/applications/recruiter").then((d) => d?.items ?? (Array.isArray(d) ? d : [])),
     recruiterApplicationResume: (applicationId) => apiRequest(`/applications/${applicationId}/resume`),
-    updateStatus: (id, status) =>
+    recruiterResumePdfUrl: (applicationId) =>
+      `${import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5001/api"}/applications/${applicationId}/resume/pdf`,
+    updateStatus: (id, payload) =>
       apiRequest(`/applications/${id}/status`, {
         method: "PATCH",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(typeof payload === "string" ? { status: payload } : payload),
       }),
+    setShortlist: async (applicationId, shouldShortlist) => {
+      const status = shouldShortlist ? "reviewing" : "submitted";
+      const resp = await apiRequest(`/applications/${applicationId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      return {
+        is_shortlisted: status === "reviewing",
+        shortlisted_at: resp?.updated_at || null,
+        application: resp,
+      };
+    },
+  },
+  notifications: {
+    myNotifications: (limit = 10) => apiRequest(`/notifications/mine?limit=${limit}`),
+    markRead: (id) =>
+      apiRequest(`/notifications/${id}/read`, {
+        method: "PATCH",
+      }),
+  },
+  admin: {
+    login: (email, password) =>
+      apiRequest("/admin/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+        auth: false,
+      }),
+    getAll: () => apiRequest("/admin"),
+    getById: (id) => apiRequest(`/admin/${id}`),
+    create: (payload) =>
+      apiRequest("/admin", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    update: (id, payload) =>
+      apiRequest(`/admin/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    delete: (id) =>
+      apiRequest(`/admin/${id}`, {
+        method: "DELETE",
+      }),
+    search: (query) =>
+      apiRequest(`/admin/search/${query}`),
+    changePassword: (id, payload) =>
+      apiRequest(`/admin/${id}/change-password`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  },
+  users: {
+    getAll: (role, status, search) => {
+      let url = "/users";
+      const params = new URLSearchParams();
+      if (role) params.append("role", role);
+      if (status) params.append("status", status);
+      if (search) params.append("search", search);
+      if (params.toString()) url += `?${params.toString()}`;
+      return apiRequest(url);
+    },
+    getById: (id) => apiRequest(`/users/${id}`),
+    create: (payload) =>
+      apiRequest("/users", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    update: (id, payload) =>
+      apiRequest(`/users/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    delete: (id) =>
+      apiRequest(`/users/${id}`, {
+        method: "DELETE",
+      }),
+    search: (query) =>
+      apiRequest(`/users/search/${query}`),
+    stats: () => apiRequest("/users/stats/overview"),
   },
 };

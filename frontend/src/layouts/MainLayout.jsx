@@ -4,6 +4,7 @@ import { AUTH_ACTIONS, FOOTER_LINKS, HEADER_NAV, ROLE_NAV, ROUTES, authRoute } f
 import CandidateHeader from "./CandidateHeader";
 import RecruiterHeader from "./RecruiterHeader";
 
+
 export default function MainLayout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -109,7 +110,6 @@ export default function MainLayout({ children }) {
           <FooterColumn title="Liên kết nhanh" items={FOOTER_LINKS.quick} />
           <FooterColumn title="Hỗ trợ" items={FOOTER_LINKS.support} />
           <FooterColumn title="Liên hệ" items={FOOTER_LINKS.contact} />
-          <FooterNewsletter />
         </div>
       </footer>
     </div>
@@ -122,6 +122,13 @@ function FooterColumn({ title, items }) {
       <h3>{title}</h3>
       <ul>
         {items.map((item) => {
+          if (!item.to) {
+            return (
+              <li key={item.label}>
+                <span>{item.label}</span>
+              </li>
+            );
+          }
           if (item.to.startsWith("mailto:") || item.to.startsWith("tel:")) {
             return (
               <li key={item.label}>

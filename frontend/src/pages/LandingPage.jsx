@@ -5,6 +5,7 @@ import { ROUTES } from "../routes";
 import LandingSearchBar from "../components/landing/LandingSearchBar";
 import LandingJobCard from "../components/landing/LandingJobCard";
 import LandingEmployerCard from "../components/landing/LandingEmployerCard";
+import { Skeleton, SkeletonJobCard } from "../components/Skeleton";
 
 const CHIP_OPTIONS = ["Tất cả", "IT", "Marketing", "Kế toán", "Junior", "Middle", "Senior", "Remote"];
 const LEVELS = ["Junior", "Middle", "Senior", "Lead"];
@@ -33,9 +34,9 @@ export default function LandingPage() {
     ])
       .then(([jobData, tagData, companyData]) => {
         if (!active) return;
-        setJobs(Array.isArray(jobData) ? jobData : []);
+        setJobs(Array.isArray(jobData?.items) ? jobData.items : Array.isArray(jobData) ? jobData : []);
         setIndustryTags(Array.isArray(tagData) ? tagData : []);
-        setCompanies(Array.isArray(companyData) ? companyData : []);
+        setCompanies(Array.isArray(companyData?.companies) ? companyData.companies : []);
       })
       .catch(() => {
         if (!active) return;
@@ -200,7 +201,7 @@ export default function LandingPage() {
               {statCards.map((item) => (
                 <div key={item.label} className="hero-radar-stat">
                   <span>{item.label}</span>
-                  <strong>{item.value}</strong>
+                  <strong>{statsLoading ? <Skeleton className="skeleton-line" width="96px" height="20px" /> : item.value}</strong>
                 </div>
               ))}
             </div>
@@ -209,7 +210,6 @@ export default function LandingPage() {
           <div className="feature-list feature-list--landing">
             <div className="feature-list-head">
               <strong>Ngành nghề nổi bật</strong>
-              <p>Lấy trực tiếp từ dữ liệu công khai trong database.</p>
             </div>
 
             {industrySource.length ? (
@@ -266,7 +266,11 @@ export default function LandingPage() {
         </div>
 
         {loading ? (
-          <div className="empty-state empty-state--hero">Đang tải dữ liệu tin tuyển dụng...</div>
+          <div className="skeleton-grid skeleton-grid--jobs">
+            {Array.from({ length: 4 }, (_, index) => (
+              <SkeletonJobCard key={index} />
+            ))}
+          </div>
         ) : filteredJobs.length ? (
           <div className="landing-job-grid">
             {filteredJobs.map((job) => (
@@ -303,7 +307,7 @@ export default function LandingPage() {
 }
 
 function getStatValue(stats, loading, errored, key) {
-  if (loading) return "...";
+  if (loading) return "";
   if (errored) return "N/A";
   const value = stats?.[key];
   return Number.isFinite(value) ? value : 0;

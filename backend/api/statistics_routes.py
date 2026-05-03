@@ -8,5 +8,4 @@ api_statistics_bp = Blueprint("api_statistics", __name__)
 
 @api_statistics_bp.get("/landing")
 def landing_statistics():
-    data = get_landing_statistics()
-    return json_ok(data, "Landing statistics fetched successfully")
+    return json_ok(get_landing_statistics())
